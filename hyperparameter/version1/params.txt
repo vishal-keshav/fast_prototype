@@ -1,0 +1,7 @@
+{
+"EPOCH": 10,
+"GPU_ENABLED": true,
+"BATCH": 100,
+"learning_rate": 0.0005,
+"extra": "extra"
+}
