@@ -31,6 +31,7 @@ class VGGNet:
         train_mode = None
         self.dropout = dropout
         blue, green, red = tf.split(axis = 3, num_or_size_splits = 3, value=img)
+        print(blue.get_shape().as_list()[1:])
         assert blue.get_shape().as_list()[1:] == [224, 224, 1]
         bgr = tf.concat(axis = 3, values = [blue, green ,red])
         assert bgr.get_shape().as_list()[1:] == [224, 224, 3]
@@ -74,7 +75,7 @@ class VGGNet:
         elif self.trainable:
             self.network['relu7'] = tf.nn.dropout(self.network['relu7'], self.dropout)
 
-        self.network['fc8'] = self.fc_layer(self.network['relu7'], 4096, 1000, "fc8")
+        self.network['fc8'] = self.fc_layer(self.network['relu7'], 4096, 10, "fc8")
 
         self.network['prob'] = tf.nn.softmax(self.network['fc8'], name="prob")
         # Empty the data dictionary, model has been initialized
@@ -138,8 +139,7 @@ class VGGNet:
 """
 Model interface for creating and returning initialized network
 """
-def create_model(args):
+def create_model(img, args):
     net = VGGNet()
-    img = tf.placeholder(tf.float32, (None, 224, 224, 3))
     net.build_model(img, args['dropout'])
     return {'feature_in': img, 'feature_out': net.get_feature()}

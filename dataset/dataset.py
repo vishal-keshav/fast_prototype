@@ -5,6 +5,7 @@ import cPickle
 import tensorflow as tf
 import numpy as np
 import cv2
+import sys
 
 #absolute_path = "/home/vishal/ml_prototype/"
 
@@ -15,19 +16,20 @@ class DataSet:
 
     def get_data(self):
         self.url = "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
-        self.filename = wget.download(self.url, self.absolute_path + "dataset/" + self.dataset_name + "/raw")
+        self.filename = wget.download(self.url, self.absolute_path + "/dataset/" + self.dataset_name + "/raw")
         print("Downloaded "+ self.filename)
+        tar = tarfile.open(self.absolute_path, "/dataset/" + self.dataset_name + "/raw/" + self.filename)
+        #tar = tarfile.open(self.absolute_path + "dataset/" + self.dataset_name + "/raw/" + name)
+        tar.extractall(path = self.absolute_path + "/dataset/" + self.dataset_name +"/raw")
+        tar.close()
+        print("Extracted the raw data.")
 
     def preprocess_data(self):
-        tar = tarfile.open(self.absolute_path, "dataset/" + self.dataset_name + "/raw/" + self.filename)
-        #tar = tarfile.open(self.absolute_path + "dataset/" + self.dataset_name + "/raw/" + name)
-        tar.extractall(path = self.absolute_path + "dataset/" + self.dataset_name +"/raw")
-        tar.close()
         raw_folder = "cifar-10-batches-py"
-        out_file = self.absolute_path + "dataset/" + self.dataset_name + "/pre-processed/" + "dataset.tfrecords"
+        out_file = self.absolute_path + "/dataset/" + self.dataset_name + "/pre-processed/" + "dataset.tfrecords"
         writer = tf.python_io.TFRecordWriter(out_file)
         for i in range(1,6):
-            filename = self.absolute_path + "dataset/" + self.dataset_name + "/raw/" + raw_folder + "/data_batch_" + str(i)
+            filename = self.absolute_path + "/dataset/" + self.dataset_name + "/raw/" + raw_folder + "/data_batch_" + str(i)
             f = open(filename, 'rb')
             dict = cPickle.load(f)
             images = dict['data']
@@ -56,7 +58,7 @@ class DataSet:
         print("Images are pre-processed.")
 
     def process_image(self, img):
-        img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_CUBIC)
+        img = cv2.resize(img, (224, 224), interpolation=cv2.INTER_CUBIC)
         return img
 
     def tfrecord_parser(self, record_file_path):
@@ -68,8 +70,9 @@ class DataSet:
                     name = 'parse_op')
         img = tf.decode_raw(parse_op['img'], tf.uint8, name = 'byte_to_int8_op')
         img = tf.cast(img, tf.float32, name = 'int8_to_int32_op')
-        img = tf.reshape(img, shape=[256, 256, 3], name = 'reshape_op') #Can be used for on-the-fly reshape
+        img = tf.reshape(img, shape=[224, 224, 3], name = 'reshape_op') #Can be used for on-the-fly reshape
         label = tf.cast(parse_op['label'], tf.int32, name = 'label_cast_op')
+        label = tf.one_hot(indices = label, depth = 10, axis=-1)
         return img, label
 
     def train_data_pipeline(self, train_data_file, PREFETCH_BUFFER, NUM_EPOCHS, BATCH_SIZE, GPU_ENABLED):
@@ -84,7 +87,7 @@ class DataSet:
         return dataset
 
     def data_provider(self, args):
-        file_name = self.absolute_path + "dataset/" + self.dataset_name + "/pre-processed/" + "dataset.tfrecords"
+        file_name = self.absolute_path + "/dataset/" + self.dataset_name + "/pre-processed/" + "dataset.tfrecords"
         dataset = self.train_data_pipeline(file_name, args['PREFETCH_BUFFER'],
                     args['NUM_EPOCHS'], args['BATCH_SIZE'], args['GPU_ENABLED'])
         iterator = dataset.make_one_shot_iterator()

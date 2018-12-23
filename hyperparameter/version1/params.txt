@@ -1,7 +1,7 @@
 {
-"NUM_EPOCHS": 10,
+"NUM_EPOCHS": 1,
 "GPU_ENABLED": false,
-"BATCH_SIZE": 100,
+"BATCH_SIZE": 10,
 "learning_rate": 0.0005,
 "PREFETCH_BUFFER": 1024,
 "intializer": 0,
