@@ -1,7 +1,10 @@
 {
-"EPOCH": 10,
-"GPU_ENABLED": true,
-"BATCH": 100,
+"NUM_EPOCHS": 10,
+"GPU_ENABLED": false,
+"BATCH_SIZE": 100,
 "learning_rate": 0.0005,
-"extra": "extra"
+"PREFETCH_BUFFER": 1024,
+"intializer": 0,
+"trainable": false,
+"dropout": 0.5
 }

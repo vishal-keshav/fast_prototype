@@ -76,7 +76,7 @@ class DataSet:
         dataset = tf.data.TFRecordDataset(filenames = train_data_file,
                                             num_parallel_reads = 8)
         dataset = dataset.apply(
-                    tf.contib.data.shuffle_and_repeat(PREFETCH_BUFFER, NUM_EPOCHS))
+                    tf.contrib.data.shuffle_and_repeat(PREFETCH_BUFFER, NUM_EPOCHS))
         dataset = dataset.apply(
                     tf.contrib.data.map_and_batch(self.tfrecord_parser, BATCH_SIZE))
         if GPU_ENABLED:

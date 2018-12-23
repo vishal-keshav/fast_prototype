@@ -10,8 +10,8 @@ External link: None
 
 from core import dataset_preprocessing as dp
 from core import model_trainer as mt
-from core import evaluator as e
-from core import generate_visualization as gv
+#from core import evaluator as e
+#from core import generate_visualization as gv
 import argparse
 
 # Program meta-data
@@ -31,13 +31,13 @@ def argument_parser():
 
 def main():
     args = argument_parser()
-    if args['phase'] == 'dataset' or args['phase'] == 'all':
+    if args.phase == 'dataset' or args.phase == 'all':
         dp.execute(args)
-    if args['phase'] == 'train' or args['phase'] == 'all':
+    if args.phase == 'train' or args.phase == 'all':
         mt.execute(args)
-    if args['phase'] == 'evaluate' or args['phase'] == 'all':
+    if args.phase == 'evaluate' or args.phase == 'all':
         e.execute(args)
-    if args['phase'] == 'visualize' or args['phase'] == 'all':
+    if args.phase == 'visualize' or args.phase == 'all':
         gv.execute(args)
 
 if __name__ == "__main__":
