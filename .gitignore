@@ -3,3 +3,4 @@
 *.npy
 dataset/MNIST
 dataset/CIFAR-10
+checkpoint/checkpoint_1_1_CIFAR-10

@@ -5,6 +5,6 @@
 "learning_rate": 0.0005,
 "PREFETCH_BUFFER": 1024,
 "intializer": 0,
-"trainable": false,
+"trainable": true,
 "dropout": 0.5
 }
