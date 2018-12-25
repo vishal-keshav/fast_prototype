@@ -1,21 +1,16 @@
-# A systematic approach to conduct ML research
+# A more systematic approach for prototyping research ideas
 
-This repository contains an easy-to-use heirarchy of code base
-in order to conduct Machine Learning research in an efficient way.
-Each file has been written keeping in mind the need to experiment with
-various ML models, track the results and present it in a good way.
+This repository contains an easy-to-use and easy-to-follow heirarchy of code base :octocat: that aids in conducting Machine Learning research. Internally, the code base relies on tensorflow framework, but same coding style can be incorporated with any ML library such as py-torch and caffe. Each file in this project has been written by keeping one thing in mind: **multiple experimentation with several revisions of ML models and several revisions of hyper-parameters**. Thus, this code-base is an intial step to manage the experiments in a systematic way and track multiple results with ample amount of visualization. :muscle::muscle::muscle:
 
-The main controller is "master.py". There are two parts which is needed
-to be told before using this code base.
-1. How to make use of it.
-2. Where to make changes.
+## About the code-base
+The main controller is *master.py*. There are two parts which is detailed description.
+* How to make use of this code-base in your own projects.
+* Where should you make changes.
 
 ## How to make use of it.
-Fork the whole repository or make a copy of it. In order to remain updated, star mark this
-repository, and you will be notified about newer version. Install the requirements or update
-the dependencies.
+Fork the whole repository or make a copy of it. In order to remain updated, :star2::star2:**star mark this repository**:star2::star2:, and you will be notified :calling: about the newer versions. Install the requirements and update the dependencies as described in requirements.txt file.
 
-Once the repository is being copied, interact only with "master.py".
+Once the repository is being copied :floppy_disk:, interact **only** with *master.py*.
 "master.py" handles following:
 * Phase 1: Get ready with benchmark dataset(s)
     * Dataset download
@@ -33,16 +28,20 @@ Once the repository is being copied, interact only with "master.py".
     * Visualization
 
 ### Options for "master.py"
-1. Dataset Phase
-example: python master.py --phase "dataset" --dataset "CIFAR-10" --download True --preprocess True
-2. Training Phase
-example: python master.py --phase "train" --dataset "CIFAR-10" --model 1 --param 1
-3. Evaluation Phase
-example: python master.py --phase "evaluate" --dataset "CIFAR-10" --model 1 --param 1
-4. Visualization
-example: python master.py --phase "visualize" --model 1 --param 1
-5. Do all of the above
-example: python master.py --dataset "CIFAR-10" --download True --preprocess True
+* Dataset Phase
+> python master.py --phase "dataset" --dataset "CIFAR-10" --download True --preprocess True
+
+* Training Phase
+> python master.py --phase "train" --dataset "CIFAR-10" --model 1 --param 1
+
+* Evaluation Phase
+> python master.py --phase "evaluate" --dataset "CIFAR-10" --model 1 --param 1
+
+* Visualization
+> python master.py --phase "visualize" --model 1 --param 1
+
+* Do all of the above
+> python master.py --dataset "CIFAR-10" --download True --preprocess True
 
 ## Where to make changes
-Will be updated soon.
+Will be updated soon...
