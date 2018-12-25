@@ -35,6 +35,12 @@ def get_model(version, inputs, param_dict):
     model = model_module.create_model(inputs, param_dict)
     return model
 
+def get_logger(keys, notify):
+    import debug.logger as lg
+    lg_obj = lg.logger(keys, notify)
+    return lg_obj
+
+
 def accuracy(predictions, labels):
     correctly_predicted = np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))
     accuracy = (100.0 * correctly_predicted) / predictions.shape[0]
@@ -52,13 +58,16 @@ def execute(args):
     img_batch, label_batch = get_data_provider(args.dataset, project_path, param_dict)
     # Construct a model to be trained
     model = get_model(args.model, img_batch, param_dict)
-    # Create a checkpoint mechanism
+    # Create a checkpoint mechanism #TODO: Will be moved to logger
     logs_path = project_path + "/checkpoint/checkpoint_" + str(args.model) + \
                 "_" + str(args.param) + "_" + args.dataset
     chk_name = os.path.join(logs_path, 'model.ckpt')
     mk_dir(logs_path)
     writer = tf.summary.FileWriter(logs_path)
     saver = tf.train.Saver()
+    # Get a logger and notifier
+    log_keys = ["loss", "accuracy"]
+    logger = get_logger(log_keys, args.notify)
     # Start a session
     with tf.Session() as sess:
         if tf.train.checkpoint_exists(chk_name):
@@ -74,9 +83,10 @@ def execute(args):
         gradient_optimizer = tf.train.GradientDescentOptimizer(param_dict['learning_rate'])
         gd_opt = gradient_optimizer.minimize(loss)
         for nr_epochs in range(param_dict['NUM_EPOCHS']):
-            print("Training for epoch " + str(nr_epochs))
-            for i in range(10):
+            for i in range(5):
                 out, l, label = sess.run([output_probability,loss, label_batch])
-                print("Loss:" + str(l))
-                print("Accuracy: " + str(accuracy(out, label)))
+                accu = accuracy(out, label)
+                log_list = {'loss': l, 'accuracy': accu}
+                logger.batch_logger(log_list, i)
+            logger.epoch_logger(nr_epochs)
             save_path = saver.save(sess, chk_name)
