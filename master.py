@@ -24,6 +24,7 @@ def argument_parser():
     parser.add_argument('--dataset', default='MNIST', type=str, help='Dataset')
     parser.add_argument('--download', default=False, type=bool, help='Download dataset?')
     parser.add_argument('--preprocess', default=False, type=bool, help='Preprocess dataset?')
+    parser.add_argument('--view', default=False, type=bool, help='View Sample dataset?')
     parser.add_argument('--model', default=1, type=int, help='Model Version')
     parser.add_argument('--param', default=1, type=int, help='Hyper-parameter Version')
     args = parser.parse_args()

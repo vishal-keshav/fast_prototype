@@ -75,9 +75,10 @@ class VGGNet:
         elif self.trainable:
             self.network['relu7'] = tf.nn.dropout(self.network['relu7'], self.dropout)
 
-        self.network['fc8'] = self.fc_layer(self.network['relu7'], 4096, 10, "fc8")
+        self.network['fc8'] = self.fc_layer(self.network['relu7'], 4096, 1000, "fc8")
+        self.network['fc9'] = self.fc_layer(self.network['fc8'], 1000, 10, "fc8")
 
-        self.network['prob'] = tf.nn.softmax(self.network['fc8'], name="prob")
+        self.network['prob'] = tf.nn.softmax(self.network['fc9'], name="prob")
         # Empty the data dictionary, model has been initialized
         self.data_dict = None
 
@@ -137,9 +138,9 @@ class VGGNet:
         return self.network['prob']
 
 """
-Model interface for creating and returning initialized network
+Model interface for creating and returning network with initializer specified
 """
 def create_model(img, args):
     net = VGGNet()
     net.build_model(img, args['dropout'])
-    return {'feature_in': img, 'feature_out': net.get_feature()}
+    return {'feature_in': img, 'feature_logits': self.network['fc9'] ,'feature_out': net.get_feature()}

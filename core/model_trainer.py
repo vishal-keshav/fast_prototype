@@ -4,16 +4,17 @@ import importlib
 import tensorflow as tf
 
 def execute(args):
-    import dataset.dataset as ds
-    model_module = "architecture.version" + str(args.model) + ".model"
-    arch = importlib.import_module(model_module)
+    model_module_path = "architecture.version" + str(args.model) + ".model"
+    model_module = importlib.import_module(model_module_path)
     project_path = os.getcwd()
-    ds_obj = ds.DataSet(args.dataset, project_path)
+    data_provider_module_path = "dataset." + args.dataset + ".data_provider"
+    data_provider_module = importlib.import_module(data_provider_module_path)
+    dp_obj = data_provider_module.get_obj(project_path)
     import hyperparameter.hyperparameter as hp
     hp_obj = hp.HyperParameters(args.param, project_path)
     param_dict = hp_obj.get_params()
-    img_batch, label_batch = ds_obj.data_provider(param_dict)
-    model = arch.create_model(img_batch, param_dict)
+    img_batch, label_batch = dp_obj.data_provider(param_dict)
+    model = model_module.create_model(img_batch, param_dict)
     # Before training, create a checkpoint mechanism
     logs_path = project_path + "/checkpoint/checkpoint_" + str(args.model) + "_" + str(args.param) + "_" + args.dataset
     chk_name = os.path.join(logs_path, 'model.ckpt')
