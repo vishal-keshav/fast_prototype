@@ -16,32 +16,47 @@ import importlib
 import tensorflow as tf
 import numpy as np
 
+def get_hyper_parameters(version, project_path):
+    import hyperparameter.hyperparameter as hp
+    hp_obj = hp.HyperParameters(version, project_path)
+    param_dict = hp_obj.get_params()
+    return param_dict
+
+def get_data_provider(dataset, project_path, param_dict):
+    data_provider_module_path = "dataset." + dataset + ".data_provider"
+    data_provider_module = importlib.import_module(data_provider_module_path)
+    dp_obj = data_provider_module.get_obj(project_path)
+    img_batch, label_batch = dp_obj.data_provider(param_dict)
+    return img_batch, label_batch
+
+def get_model(version, inputs, param_dict):
+    model_module_path = "architecture.version" + str(version) + ".model"
+    model_module = importlib.import_module(model_module_path)
+    model = model_module.create_model(inputs, param_dict)
+    return model
+
 def accuracy(predictions, labels):
     correctly_predicted = np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))
     accuracy = (100.0 * correctly_predicted) / predictions.shape[0]
     return accuracy
 
+def mk_dir(path):
+    if not os.path.isdir(path):
+        os.mkdir(path)
+
 def execute(args):
     # Declare hyper-parameters (param_dict is a dictionary of parameters)
     project_path = os.getcwd()
-    import hyperparameter.hyperparameter as hp
-    hp_obj = hp.HyperParameters(args.param, project_path)
-    param_dict = hp_obj.get_params()
+    param_dict = get_hyper_parameters(args.param, project_path)
     # Define the data provider module
-    data_provider_module_path = "dataset." + args.dataset + ".data_provider"
-    data_provider_module = importlib.import_module(data_provider_module_path)
-    dp_obj = data_provider_module.get_obj(project_path)
-    img_batch, label_batch = dp_obj.data_provider(param_dict)
+    img_batch, label_batch = get_data_provider(args.dataset, project_path, param_dict)
     # Construct a model to be trained
-    model_module_path = "architecture.version" + str(args.model) + ".model"
-    model_module = importlib.import_module(model_module_path)
-    model = model_module.create_model(img_batch, param_dict)
+    model = get_model(args.model, img_batch, param_dict)
     # Create a checkpoint mechanism
     logs_path = project_path + "/checkpoint/checkpoint_" + str(args.model) + \
                 "_" + str(args.param) + "_" + args.dataset
     chk_name = os.path.join(logs_path, 'model.ckpt')
-    if not os.path.isdir(logs_path):
-        os.mkdir(logs_path)
+    mk_dir(logs_path)
     writer = tf.summary.FileWriter(logs_path)
     saver = tf.train.Saver()
     # Start a session

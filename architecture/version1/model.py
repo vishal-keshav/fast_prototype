@@ -31,7 +31,6 @@ class VGGNet:
         train_mode = None
         self.dropout = dropout
         blue, green, red = tf.split(axis = 3, num_or_size_splits = 3, value=img)
-        print(blue.get_shape().as_list()[1:])
         assert blue.get_shape().as_list()[1:] == [224, 224, 1]
         bgr = tf.concat(axis = 3, values = [blue, green ,red])
         assert bgr.get_shape().as_list()[1:] == [224, 224, 3]

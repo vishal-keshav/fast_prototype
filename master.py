@@ -11,7 +11,7 @@ External link: None
 from core import dataset_preprocessing as dp
 from core import model_trainer as mt
 #from core import evaluator as e
-#from core import generate_visualization as gv
+from core import generate_visualization as gv
 import argparse
 
 # Program meta-data
@@ -25,6 +25,8 @@ def argument_parser():
     parser.add_argument('--download', default=False, type=bool, help='Download dataset?')
     parser.add_argument('--preprocess', default=False, type=bool, help='Preprocess dataset?')
     parser.add_argument('--view', default=False, type=bool, help='View Sample dataset?')
+    parser.add_argument('--viewtype', default='model', type=str, help='Type of visualization?')
+    parser.add_argument('--notify', default=False, type=bool, help='Training notification?')
     parser.add_argument('--model', default=1, type=int, help='Model Version')
     parser.add_argument('--param', default=1, type=int, help='Hyper-parameter Version')
     args = parser.parse_args()
