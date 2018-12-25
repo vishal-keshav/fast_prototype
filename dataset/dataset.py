@@ -31,6 +31,7 @@ class DataSet:
         dp.set_batch(1)
         out = dp.next()
         dp.view(out)
+        # TODO: Key stroke based loop
         """while True:
             try:
                 if keyboard.is_pressed('q'):
