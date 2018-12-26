@@ -1,0 +1,13 @@
+numpy
+ntfy
+slackclient
+ntfy[slack]
+tensorflow
+tensorflow_gpu
+keyboard
+opencv_python
+netron
+wget
+pathlib
+statistics
+argparse

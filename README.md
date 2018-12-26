@@ -1,6 +1,12 @@
 # A more systematic approach for prototyping research ideas
 
-This repository contains an easy-to-use and easy-to-follow heirarchy of code base :octocat: that aids in conducting Machine Learning research. Internally, the code base relies on tensorflow framework, but same coding style can be incorporated with any ML library such as py-torch and caffe. Each file in this project has been written by keeping one thing in mind: **multiple experimentation with several revisions of ML models and several revisions of hyper-parameters**. Thus, this code-base is an intial step to manage the experiments in a systematic way and track multiple results with ample amount of visualization. :muscle::muscle::muscle:
+This repository contains an easy-to-use and easy-to-follow heirarchy of code base :octocat: that aids in conducting Machine Learning research. Internally, the code base relies on tensorflow framework, but same coding style can be incorporated with any ML library such as py-torch and caffe. Each file in this project has been written by keeping one thing in mind: **multiple experimentation with several revisions of ML models and several revisions of hyper-parameters**. Thus, this code-base is an intial step to manage the experiments in a systematic way and track multiple results with ample amount of visualization. :muscle:
+
+## Dependency
+`numpy` `ntfy` `slackclient` `ntfy[slack]` `tensorflow` or `tensorflow_gpu` `keyboard` `opencv_python` `netron` `wget` `pathlib` `statistics` `argparse`
+
+Tested on python version 2
+All packages can be updated/installed with `pip install -r requirements.txt` except `ntfy[slack]`. Install `ntfy[slack]` seperately with `pip install ntfy[slack]` post requirements.txt installation.
 
 ## About the code-base
 The main controller is *master.py*. There are two parts which is detailed description.
@@ -12,22 +18,22 @@ Fork the whole repository or make a copy of it. In order to remain updated, :sta
 
 Once the repository is being copied :floppy_disk:, interact **only** with *master.py*.
 "master.py" handles following:
-* Phase 1: Get ready with benchmark dataset(s)
+* **Phase 1:** Get ready with benchmark dataset(s)
     * Dataset download
     * Data pre-processing
     * Data provider as required in training phase.
-* Phase 2: Declararing the architecture(s) and training detail(s)
+* **Phase 2:** Declararing the architecture(s) and training detail(s)
     * Model architecture design
     * Hyper-parameter settings
     * Setup intermediate results saving infrastructure
-* Phase 3: Training and evaluation
+* **Phase 3:** Training and evaluation
     * Training
     * Testing and setting visualization infrastructure
-* Phase 4: Record results
+* **Phase 4:** Record results
     * Create tabular results
     * Visualization
 
-### Options for "master.py"
+### Options for *master.py*
 * Dataset Phase
 > python master.py --phase "dataset" --dataset "CIFAR-10" --download True --preprocess True
 
