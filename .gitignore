@@ -6,3 +6,4 @@ dataset/MNIST/pre-processed
 dataset/CIFAR-10/raw
 dataset/CIFAR-10/pre-processed
 checkpoint/checkpoint_1_1_CIFAR-10
+checkpoint/checkpoint_2_2_CIFAR-10
