@@ -9,12 +9,12 @@ import ntfy
 from ntfy.backends.slack import notify
 
 class logger:
-    def __init__(self, keys, send = False):
+    def __init__(self, keys, send = False, token = None):
         self.keys = keys
         self.batch_log = {}
         self.epoch_log = []
         self.init_batch()
-        self.notif = notification()
+        self.notif = notification(token)
         self.send = send
 
     def init_batch(self):
@@ -45,10 +45,10 @@ class logger:
 
 
 class notification:
-    def __init__(self):
+    def __init__(self, token):
         self.title = "fast_prototype"
         self.message = ""
-        self.token = "xoxp-510913489441-510780155280-510920240193-d7a368d0fb69be6187512139e291dad8"
+        self.token = ""
         self.recipient = "#general"
 
     def set_message(self, msg):
