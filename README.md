@@ -50,4 +50,40 @@ Once the repository is being copied :floppy_disk:, interact **only** with *maste
 > python master.py --dataset "CIFAR-10" --download True --preprocess True
 
 ## Where to make changes
-Will be updated soon...
+* dataset/*dataset_name*/dataset_script.py
+```
+Here define the methods to retrive, download and process the dataset.
+Two folders namely raw and pre-processed shall be used for any pre-processing.
+Do not change getter function name and class signature
+```
+
+* dataset/*dataset_name*/dataset_provider.py
+```
+Must define atleast two functions namely set_batch(batch_size) and next()
+Do not change getter function name and class signature
+```
+
+* architecture/version_x/model.py
+```
+Define the architecture in build function.
+Do not change anything else.
+For a new model, a new folder with a incremental version number
+should be created.
+```
+
+* core/model_trainer.py
+```
+Make changes to get_data_provider() function. Change code only inside
+session of execute() function
+```
+
+* core/generate_visualization.py
+```
+Make changes to get_model() function only.
+```
+
+* hyperparameter/version_x/param
+```
+Modify param.json file in a provided version folder or add a new verson
+folder with param.json file.
+```
