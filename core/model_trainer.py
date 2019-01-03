@@ -60,11 +60,6 @@ def get_logger(keys, notify):
     lg_obj = lg.logger(keys, notify)
     return lg_obj
 
-"""def accuracy(predictions, labels):
-    correctly_predicted = np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))
-    accuracy = (100.0 * correctly_predicted) / predictions.shape[0]
-return accuracy"""
-
 def accuracy(predictions, labels):
     with tf.name_scope('accuracy'):
         correct_prediction = tf.equal(tf.argmax(predictions, 1), tf.argmax(labels,1))
@@ -121,7 +116,7 @@ def execute(args):
                 img_batch_data, label_batch_data = dp.next()
                 feed_dict = {img_batch: img_batch_data, label_batch: label_batch_data}
                 _, out, loss, accu, summary = sess.run([gd_opt_op,output_probability,loss_op, accuracy_op, summary_op], feed_dict = feed_dict)
-                train_writer.add_summary(summary)
+                train_writer.add_summary(summary, nr_epochs*10 + i)
                 log_list = {'loss': loss, 'accuracy': accu}
                 logger.batch_logger(log_list, i)
             logger.epoch_logger(nr_epochs)
