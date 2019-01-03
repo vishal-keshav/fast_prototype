@@ -33,8 +33,10 @@ def get_data_provider(dataset, project_path, param_dict):
     data_provider_module_path = "dataset." + dataset + ".data_provider"
     data_provider_module = importlib.import_module(data_provider_module_path)
     dp_obj = data_provider_module.get_obj(project_path)
-    img_batch = tf.placeholder(tf.float32, [None, 28, 28, 1])
-    label_batch = tf.placeholder(tf.float32, [None, 10])
+    with tf.name_scope('input'):
+        img_batch = tf.placeholder(tf.float32, [None, 28, 28, 1])
+    with tf.name_scope('output'):
+        label_batch = tf.placeholder(tf.int64, [None, 10])
     return img_batch, label_batch, dp_obj
 
 def get_model(version, inputs, param_dict):
@@ -43,15 +45,31 @@ def get_model(version, inputs, param_dict):
     model = model_module.create_model(inputs, param_dict)
     return model
 
+def optimisation(label_batch, logits, param_dict):
+    with tf.name_scope('loss'):
+        loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
+                        labels=label_batch, logits=logits))
+    tf.summary.scalar('loss', loss_op)
+    with tf.name_scope('gradient_optimisation'):
+        gradient_optimizer_op = tf.train.AdamOptimizer(param_dict['learning_rate'])
+        gd_opt_op = gradient_optimizer_op.minimize(loss_op)
+    return loss_op, gd_opt_op
+
 def get_logger(keys, notify):
     import debug.logger as lg
     lg_obj = lg.logger(keys, notify)
     return lg_obj
 
-
-def accuracy(predictions, labels):
+"""def accuracy(predictions, labels):
     correctly_predicted = np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))
     accuracy = (100.0 * correctly_predicted) / predictions.shape[0]
+return accuracy"""
+
+def accuracy(predictions, labels):
+    with tf.name_scope('accuracy'):
+        correct_prediction = tf.equal(tf.argmax(predictions, 1), tf.argmax(labels,1))
+        accuracy = 100*tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    tf.summary.scalar('accuracy', accuracy)
     return accuracy
 
 def mk_dir(path):
@@ -80,12 +98,16 @@ def execute(args):
     # Define optimization procedure
     logits = model['feature_logits']
     output_probability = model['feature_out']
-    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-                    labels=label_batch, logits=logits))
-    gradient_optimizer = tf.train.AdamOptimizer(param_dict['learning_rate'])
-    gd_opt = gradient_optimizer.minimize(loss)
+    loss_op, gd_opt_op = optimisation(label_batch, logits, param_dict)
+    # Define accuracy operation
+    accuracy_op = accuracy(output_probability, label_batch)
+    # Merge all summaries
+    summary_op = tf.summary.merge_all()
+    summary_path = project_path + "/debug/summary_" + str(args.model) + \
+                "_" + str(args.param) + "_" + args.dataset
     # Start a session
     with tf.Session() as sess:
+        train_writer = tf.summary.FileWriter(summary_path + '/train', sess.graph)
         if tf.train.checkpoint_exists(chk_name):
             sess.run(tf.global_variables_initializer())
             saver.restore(sess, chk_name)
@@ -98,9 +120,10 @@ def execute(args):
             for i in range(10):
                 img_batch_data, label_batch_data = dp.next()
                 feed_dict = {img_batch: img_batch_data, label_batch: label_batch_data}
-                _, out, l = sess.run([gd_opt,output_probability,loss], feed_dict = feed_dict)
-                accu = accuracy(out, label_batch_data)
-                log_list = {'loss': l, 'accuracy': accu}
+                _, out, loss, accu, summary = sess.run([gd_opt_op,output_probability,loss_op, accuracy_op, summary_op], feed_dict = feed_dict)
+                train_writer.add_summary(summary)
+                log_list = {'loss': loss, 'accuracy': accu}
                 logger.batch_logger(log_list, i)
             logger.epoch_logger(nr_epochs)
             save_path = saver.save(sess, chk_name)
+        train_writer.close()

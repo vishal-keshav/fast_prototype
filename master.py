@@ -10,7 +10,7 @@ External link: None
 
 from core import dataset_preprocessing as dp
 from core import model_trainer as mt
-#from core import evaluator as e
+from core import evaluator as e
 from core import generate_visualization as gv
 import argparse
 

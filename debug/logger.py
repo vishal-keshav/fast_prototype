@@ -22,9 +22,6 @@ class logger:
         for key in self.keys:
             self.batch_log.update({key: []})
 
-    def dummy(self):
-        print("DUMMY")
-
     def batch_logger(self, data_dict, index):
         print("BATCH " + str(index))
         for key, value in data_dict.items():

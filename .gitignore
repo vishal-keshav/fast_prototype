@@ -1,6 +1,7 @@
 *.pyc
 *.json
 *.npy
+MNIST_data
 dataset/MNIST/raw
 dataset/MNIST/pre-processed
 dataset/CIFAR-10/raw
@@ -9,3 +10,4 @@ checkpoint/checkpoint_1_1_CIFAR-10
 checkpoint/checkpoint_2_2_CIFAR-10
 checkpoint/checkpoint_3_3_MNIST
 debug/model.pbtxt
+debug/summary_3_3_MNIST
