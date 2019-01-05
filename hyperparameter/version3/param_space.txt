@@ -1,0 +1,4 @@
+{
+"BATCH_SIZE": {"type": "Int", "low": 10, "high": 128},
+"learning_rate": {"type": "Real", "low": 1e-6, "high": 1e-2, "prior": "log-uniform"}
+}

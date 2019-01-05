@@ -30,8 +30,20 @@ class HyperParameters:
         file_path = self.project_path + "/hyperparameter/version" + str(self.version) + "/params.txt"
         self.parameter_list = json.load(open(file_path))
 
+    def read_parameter_space(self):
+        file_path = self.project_path + "/hyperparameter/version" + str(self.version) + "/param_space.txt"
+        self.parameter_space = json.load(open(file_path))
+
     def get_params(self):
         return self.parameter_list
+
+    def get_param_space(self):
+        file = Path(self.project_path + "/hyperparameter/version" + str(self.version) + "/param_space.txt")
+        if file.is_file():
+            self.read_parameter_space()
+        else:
+            self.parameter_space = {}
+        return self.parameter_space
 
     def reset_params(self):
         self.parameter_list = {}

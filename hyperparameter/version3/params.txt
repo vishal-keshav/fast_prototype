@@ -1,5 +1,5 @@
 {
-"NUM_EPOCHS": 20,
+"NUM_EPOCHS": 2,
 "BATCH_SIZE": 50,
 "learning_rate": 0.0001
 }

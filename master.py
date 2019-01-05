@@ -9,6 +9,7 @@ External link: None
 """
 
 from core import dataset_preprocessing as dp
+from core import hyperparameter_search as hp
 from core import model_trainer as mt
 from core import evaluator as e
 from core import generate_visualization as gv
@@ -36,6 +37,8 @@ def main():
     args = argument_parser()
     if args.phase == 'dataset' or args.phase == 'all':
         dp.execute(args)
+    if args.phase == 'param_search':
+        hp.execute(args)
     if args.phase == 'train' or args.phase == 'all':
         mt.execute(args)
     if args.phase == 'evaluate' or args.phase == 'all':

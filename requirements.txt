@@ -10,3 +10,4 @@ wget
 pathlib
 statistics
 argparse
+scikit-optimize

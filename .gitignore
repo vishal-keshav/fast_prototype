@@ -11,3 +11,4 @@ checkpoint/checkpoint_2_2_CIFAR-10
 checkpoint/checkpoint_3_3_MNIST
 debug/model.pbtxt
 debug/summary_3_3_MNIST
+debug/opt_3_3_MNIST/
