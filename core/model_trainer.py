@@ -103,6 +103,7 @@ def execute(args):
     # Start a session
     with tf.Session() as sess:
         train_writer = tf.summary.FileWriter(summary_path + '/train', sess.graph)
+        validation_writer = tf.summary.FileWriter(summary_path + '/validation')
         if tf.train.checkpoint_exists(chk_name):
             sess.run(tf.global_variables_initializer())
             saver.restore(sess, chk_name)
@@ -117,8 +118,14 @@ def execute(args):
                 feed_dict = {img_batch: img_batch_data, label_batch: label_batch_data}
                 _, out, loss, accu, summary = sess.run([gd_opt_op,output_probability,loss_op, accuracy_op, summary_op], feed_dict = feed_dict)
                 train_writer.add_summary(summary, nr_epochs*10 + i)
+
+                img_validation_data, label_validation_data = dp.validation()
+                feed_dict = {img_batch: img_validation_data, label_batch: label_validation_data}
+                summary = sess.run(summary_op, feed_dict = feed_dict)
+                validation_writer.add_summary(summary, nr_epochs*10 + i)
                 log_list = {'loss': loss, 'accuracy': accu}
                 logger.batch_logger(log_list, i)
             logger.epoch_logger(nr_epochs)
             save_path = saver.save(sess, chk_name)
         train_writer.close()
+        validation_writer.close()

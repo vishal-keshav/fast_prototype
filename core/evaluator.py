@@ -23,6 +23,7 @@ class TensorBoard:
 def execute(args):
     project_path = os.getcwd()
     summary_dir = project_path + "/debug/summary_" + str(args.model) + \
-                "_" + str(args.param) + "_" + args.dataset + "/train"
+                "_" + str(args.param) + "_" + args.dataset
     tb_obj = TensorBoard(summary_dir)
     tb_obj.run()
+    programPause = raw_input("Press the <ENTER> key to move on.")
