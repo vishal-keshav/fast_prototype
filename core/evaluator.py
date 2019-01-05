@@ -9,9 +9,15 @@ import tensorflow as tf
 from tensorboard import default
 from tensorboard import program
 import os
+from os import listdir
+from os.path import isfile, join
 import sys
 import importlib
 import numpy as np
+import cv2
+import math
+import matplotlib
+import matplotlib.pyplot as plt
 
 class TensorBoard:
     def __init__(self, dir_path):
@@ -111,10 +117,42 @@ def test_accuracy_confusion(e):
     confusion_matrix = e.evaluate(confusion_matrix_op, feed_dict)
     print(confusion_matrix)
 
+def generate_layer_activation(e, input):
+    img_placeholder, label_placeholder = e.get_placeholders()
+    model = e.get_model()
+    feed_dict = {img_placeholder: input}
+    op = model['layer_1']
+    return op, feed_dict
+
+def plot_activation(feature, path):
+    nr_feature = feature.shape[3]
+    plt.figure(1, figsize=(20,20))
+    n_columns = 6
+    n_rows = math.ceil(nr_feature / n_columns) + 1
+    for i in range(nr_feature):
+        plt.subplot(n_rows, n_columns, i+1)
+        plt.title('Filter ' + str(i))
+        plt.imshow(feature[0,:,:,i], interpolation="nearest", cmap="gray")
+    plt.savefig(path + '/vis_plot.jpg')
+
+def evaluation_on_sample(e, args, project_path, all=True):
+    sample_path = project_path + "/dataset/" + args.dataset + "/sample/"
+    write_path = project_path + "/visualization/vis" + str(args.model) + "_" + str(args.param) + "_" + args.dataset
+    if not os.path.isdir(write_path):
+        os.mkdir(write_path)
+    sample_files = [f for f in listdir(sample_path) if isfile(join(sample_path, f))]
+    for file in sample_files:
+        input = cv2.imread(sample_path + file, 0)
+        input = input.reshape((1,28,28,1))/255.0
+        op, feed_dict = generate_layer_activation(e, input)
+        out = e.evaluate(op, feed_dict)
+        plot_activation(out, write_path)
+        programPause = raw_input("Press the <ENTER> key to move on.")
 
 def execute(args):
     project_path = os.getcwd()
-    tensorboard_evaluation(args, project_path)
-    profile_model(args, project_path)
+    #tensorboard_evaluation(args, project_path)
+    #profile_model(args, project_path)
     eval_obj = evaluation_on_input(args, project_path)
-    test_accuracy_confusion(eval_obj)
+    #test_accuracy_confusion(eval_obj)
+    evaluation_on_sample(eval_obj,args, project_path)

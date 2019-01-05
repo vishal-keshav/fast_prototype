@@ -71,6 +71,9 @@ class SimpleNet:
     def get_logits(self):
         return self.network['logits']
 
+    def get_network(self):
+        return self.network
+
 
 def variable_summaries(var):
     with tf.name_scope('summaries'):
@@ -89,4 +92,5 @@ Model interface for creating and returning network with initializer specified
 def create_model(img, args):
     net = SimpleNet()
     net.build_model(img)
-    return {'feature_in': img, 'feature_logits': net.get_logits() ,'feature_out': net.get_feature()}
+    return {'feature_in': img, 'feature_logits': net.get_logits() ,'feature_out': net.get_feature(),
+                'layer_1': net.get_network()['h_pool1'], 'layer_2': net.get_network()['h_pool2']}
