@@ -19,6 +19,9 @@ class HyperParameters:
         else:
             self.parameter_list[name] = value
 
+    def set_parameter(self, name, value):
+        self.parameter_list[name] = value
+
     def get_value(self, name):
         return self.parameter_list[name]
 

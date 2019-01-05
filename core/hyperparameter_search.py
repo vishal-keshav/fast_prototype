@@ -30,6 +30,13 @@ def get_hyper_parameters(version, project_path, get_param_space = True):
     else:
         return param_dict
 
+def set_hyper_parameter(version, project_path, dict):
+    import hyperparameter.hyperparameter as hp
+    hp_obj = hp.HyperParameters(version, project_path)
+    for key, value in dict.items():
+        hp_obj.set_parameter(key, value)
+    hp_obj.dump_parameter()
+
 default_param_name = []
 default_param_value = []
 space_dimensions = []
@@ -137,6 +144,8 @@ def fitness(param_space_values):
                 _, out, loss, accu, summary = sess.run([gd_opt_op,output_probability,loss_op, accuracy_op, summary_op], feed_dict = feed_dict)
                 train_writer.add_summary(summary, nr_epochs*10 + i)
         train_writer.close()
+    tf.reset_default_graph()
+    print(accu)
     return -accu
 
 def execute(arguments):
@@ -151,6 +160,11 @@ def execute(arguments):
     search_result = gp_minimize(func=fitness,
                             dimensions=space_dimensions,
                             acq_func='EI',
-                            n_calls=11,
+                            n_calls=20,
                             x0=default_param_value)
-    print("Optimization done")
+    print("Best parameters has been searched")
+    best_results = search_result.x
+    param_dict_opt = param_dict
+    for i in range(len(default_param_name)):
+        param_dict_opt[default_param_name[i]] = best_results[i]
+    set_hyper_parameter(args.param, project_path, param_dict_opt)
