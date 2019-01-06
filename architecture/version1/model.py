@@ -1,5 +1,7 @@
 import tensorflow as tf
 import numpy as np
+import os
+import wget
 
 """
 VGGNet Architecture
@@ -14,135 +16,206 @@ class VGGNet:
     VGG19 architecture.
     It can be trained with imageNet initialization.
     """
-    def __init__(self, initializer = None, trainable = True):
-        if initializer is not None:
-            self.data_dict = np.load(initializer)[()]
+    def __init__(self, weights = None, dropout = 1.0, trainable = True):
+        if weights is not None:
+            self.data_dict = weights
         else:
             self.data_dict = None
         self.trainable = trainable
-        self.layers = []
+        self.reuse = var_reuse
+        self.dropout = dropout
         self.network = {}
-        self.var_dict = {}
+
+    """
+    Wrapper on varable re-use
+    """
+    def build_model(self, img, var_reuse):
+        if var_reuse:
+            with tf.variable_scope("vgg16", reuse = tf.AUTO_REUSE):
+                self.build_model(img)
+        else:
+            self.build_model(img)
 
     """
     Builds the model
     """
-    def build_model(self, img, dropout):
-        train_mode = None
-        self.dropout = dropout
-        blue, green, red = tf.split(axis = 3, num_or_size_splits = 3, value=img)
-        assert blue.get_shape().as_list()[1:] == [224, 224, 1]
-        bgr = tf.concat(axis = 3, values = [blue, green ,red])
-        assert bgr.get_shape().as_list()[1:] == [224, 224, 3]
-        self.network['conv1_1'] = self.conv_layer(bgr, 3, 64, "conv1_1")
-        self.network['conv1_2'] = self.conv_layer(self.network['conv1_1'], 64, 64, "conv1_2")
-        self.network['pool1'] = self.max_pool(self.network['conv1_2'], 'pool1')
+    def build_model(self, img):
+        with tf.name_scope('preprocess') as scope:
+            mean = tf.constant([123.68, 116.779, 103.939], dtype=tf.float32, shape=[1, 1, 1, 3], name='img_mean')
+            input = img-mean
 
-        self.network['conv2_1'] = self.conv_layer(self.network['pool1'], 64, 128, "conv2_1")
-        self.network['conv2_2'] = self.conv_layer(self.network['conv2_1'], 128, 128, "conv2_2")
-        self.network['pool2'] = self.max_pool(self.network['conv2_2'], 'pool2')
+        with tf.name_scope('conv1_1') as scope:
+            kernel = self.get_var(shape = [3, 3, 3, 64], name = "conv1_1_W")
+            biases = self.get_var(shape=[64], name="conv1_1_b")
+            conv1_1 = tf.nn.conv2d(input, kernel, [1, 1, 1, 1], padding='SAME')
+            conv1_1 = tf.nn.bias_add(conv1_1, biases)
+            conv1_1 = tf.nn.relu(conv1_1, name=scope)
 
-        self.network['conv3_1'] = self.conv_layer(self.network['pool2'], 128, 256, "conv3_1")
-        self.network['conv3_2'] = self.conv_layer(self.network['conv3_1'], 256, 256, "conv3_2")
-        self.network['conv3_3'] = self.conv_layer(self.network['conv3_2'], 256, 256, "conv3_3")
-        self.network['conv3_4'] = self.conv_layer(self.network['conv3_3'], 256, 256, "conv3_4")
-        self.network['pool3'] = self.max_pool(self.network['conv3_4'], 'pool3')
+        with tf.name_scope('conv1_2') as scope:
+            kernel = self.get_var(shape = [3, 3, 64, 64], name = "conv1_2_W")
+            biases = self.get_var(shape=[64], name="conv1_2_b")
+            conv1_2 = tf.nn.conv2d(conv1_1, kernel, [1, 1, 1, 1], padding='SAME')
+            conv1_2 = tf.nn.bias_add(conv1_1, biases)
+            conv1_2 = tf.nn.relu(conv1_1, name=scope)
 
-        self.network['conv4_1'] = self.conv_layer(self.network['pool3'], 256, 512, "conv4_1")
-        self.network['conv4_2'] = self.conv_layer(self.network['conv4_1'], 512, 512, "conv4_2")
-        self.network['conv4_3'] = self.conv_layer(self.network['conv4_2'], 512, 512, "conv4_3")
-        self.network['conv4_4'] = self.conv_layer(self.network['conv4_3'], 512, 512, "conv4_4")
-        self.network['pool4'] = self.max_pool(self.network['conv4_4'], 'pool4')
+        with tf.name_scope('pool1') as scope:
+            pool1 = tf.nn.avg_pool(conv1_2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME',name=scope)
 
-        self.network['conv5_1'] = self.conv_layer(self.network['pool4'], 512, 512, "conv5_1")
-        self.network['conv5_2'] = self.conv_layer(self.network['conv5_1'], 512, 512, "conv5_2")
-        self.network['conv5_3'] = self.conv_layer(self.network['conv5_2'], 512, 512, "conv5_3")
-        self.network['conv5_4'] = self.conv_layer(self.network['conv5_3'], 512, 512, "conv5_4")
-        self.network['pool5'] = self.max_pool(self.network['conv5_4'], 'pool5')
+        with tf.name_scope('conv2_1') as scope:
+            kernel = self.get_var(shape = [3, 3, 64, 128], name = "conv2_1_W")
+            biases = self.get_var(shape=[128], name="conv2_1_b")
+            conv2_1 = tf.nn.conv2d(pool1, kernel, [1, 1, 1, 1], padding='SAME')
+            conv2_1 = tf.nn.bias_add(conv2_1, biases)
+            conv2_1 = tf.nn.relu(conv2_1, name=scope)
 
-        self.network['fc6'] = self.fc_layer(self.network['pool5'], 25088, 4096, "fc6")  # 25088 = ((224 // (2 ** 5)) ** 2) * 512
-        self.network['relu6'] = tf.nn.relu(self.network['fc6'])
-        if train_mode is not None:
-            self.network['relu6'] = tf.cond(train_mode, lambda: tf.nn.dropout(self.relu6, self.dropout), lambda: self.network['relu6'])
-        elif self.trainable:
-            self.network['relu6'] = tf.nn.dropout(self.network['relu6'], self.dropout)
+        with tf.name_scope('conv2_2') as scope:
+            kernel = self.get_var(shape = [3, 3, 128, 128], name = "conv2_2_W")
+            biases = self.get_var(shape=[128], name="conv2_2_b")
+            conv2_2 = tf.nn.conv2d(conv2_1, kernel, [1, 1, 1, 1], padding='SAME')
+            conv2_2 = tf.nn.bias_add(conv2_2, biases)
+            conv2_2 = tf.nn.relu(conv2_2, name=scope)
 
-        self.network['fc7'] = self.fc_layer(self.network['relu6'], 4096, 4096, "fc7")
-        self.network['relu7'] = tf.nn.relu(self.network['fc7'])
-        if train_mode is not None:
-            self.network['relu7'] = tf.cond(train_mode, lambda: tf.nn.dropout(self.network['relu7'], self.dropout), lambda: self.network['relu7'])
-        elif self.trainable:
-            self.network['relu7'] = tf.nn.dropout(self.network['relu7'], self.dropout)
+        with tf.name_scope('pool2') as scope:
+            pool2 = tf.nn.avg_pool(conv2_2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME',name=scope)
 
-        self.network['fc8'] = self.fc_layer(self.network['relu7'], 4096, 1000, "fc8")
-        self.network['fc9'] = self.fc_layer(self.network['fc8'], 1000, 10, "fc9")
+        with tf.name_scope('conv3_1') as scope:
+            kernel = self.get_var(shape = [3, 3, 128, 256], name = "conv3_1_W")
+            biases = self.get_var(shape=[256], name="conv3_1_b")
+            conv3_1 = tf.nn.conv2d(pool2, kernel, [1, 1, 1, 1], padding='SAME')
+            conv3_1 = tf.nn.bias_add(conv3_1, biases)
+            conv3_1 = tf.nn.relu(conv3_1, name=scope)
 
-        self.network['prob'] = tf.nn.softmax(self.network['fc9'], name="prob")
-        # Empty the data dictionary, model has been initialized
-        self.data_dict = None
+        with tf.name_scope('conv3_2') as scope:
+            kernel = self.get_var(shape = [3, 3, 256, 256], name = "conv3_2_W")
+            biases = self.get_var(shape=[256], name="conv3_2_b")
+            conv3_2 = tf.nn.conv2d(conv3_1, kernel, [1, 1, 1, 1], padding='SAME')
+            conv3_2 = tf.nn.bias_add(conv3_2, biases)
+            conv3_2 = tf.nn.relu(conv3_2, name=scope)
 
-    def avg_pool(self, bottom, name):
-        return tf.nn.avg_pool(bottom, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', name=name)
+        with tf.name_scope('conv3_3') as scope:
+            kernel = self.get_var(shape = [3, 3, 256, 256], name = "conv3_3_W")
+            biases = self.get_var(shape=[256], name="conv3_3_b")
+            conv3_3 = tf.nn.conv2d(conv3_2, kernel, [1, 1, 1, 1], padding='SAME')
+            conv3_3 = tf.nn.bias_add(conv3_3, biases)
+            conv3_3 = tf.nn.relu(conv3_3, name=scope)
 
-    def max_pool(self, bottom, name):
-        return tf.nn.max_pool(bottom, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', name=name)
+        with tf.name_scope('pool3') as scope:
+            pool3 = tf.nn.avg_pool(conv3_3, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME',name=scope)
 
-    def conv_layer(self, bottom, in_channels, out_channels, name):
-        with tf.variable_scope(name):
-            filt, conv_biases = self.get_conv_var(3, in_channels, out_channels, name)
+        with tf.name_scope('conv4_1') as scope:
+            kernel = self.get_var(shape = [3, 3, 256, 512], name = "conv4_1_W")
+            biases = self.get_var(shape=[512], name="conv4_1_b")
+            conv4_1 = tf.nn.conv2d(pool3, kernel, [1, 1, 1, 1], padding='SAME')
+            conv4_1 = tf.nn.bias_add(conv4_1, biases)
+            conv4_1 = tf.nn.relu(conv4_1, name=scope)
 
-            conv = tf.nn.conv2d(bottom, filt, [1, 1, 1, 1], padding='SAME')
-            bias = tf.nn.bias_add(conv, conv_biases)
-            relu = tf.nn.relu(bias)
+        with tf.name_scope('conv4_2') as scope:
+            kernel = self.get_var(shape = [3, 3, 512, 512], name = "conv4_2_W")
+            biases = self.get_var(shape=[512], name="conv4_2_b")
+            conv4_2 = tf.nn.conv2d(conv4_1, kernel, [1, 1, 1, 1], padding='SAME')
+            conv4_2 = tf.nn.bias_add(conv4_2, biases)
+            conv4_2 = tf.nn.relu(conv4_2, name=scope)
 
-            self.layers.append(conv)
-            self.layers.append(relu)
+        with tf.name_scope('conv4_3') as scope:
+            kernel = self.get_var(shape = [3, 3, 512, 512], name = "conv4_3_W")
+            biases = self.get_var(shape=[256], name="conv4_3_b")
+            conv4_3 = tf.nn.conv2d(conv4_2, kernel, [1, 1, 1, 1], padding='SAME')
+            conv4_3 = tf.nn.bias_add(conv4_3, biases)
+            conv4_3 = tf.nn.relu(conv4_3, name=scope)
 
-            return relu
+        with tf.name_scope('pool4') as scope:
+            pool4 = tf.nn.avg_pool(conv4_3, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME',name=scope)
 
-    def fc_layer(self, bottom, in_size, out_size, name):
-        with tf.variable_scope(name):
-            weights, biases = self.get_fc_var(in_size, out_size, name)
+        with tf.name_scope('conv5_1') as scope:
+            kernel = self.get_var(shape = [3, 3, 512, 512], name = "conv5_1_W")
+            biases = self.get_var(shape=[512], name="conv5_1_b")
+            conv5_1 = tf.nn.conv2d(pool4, kernel, [1, 1, 1, 1], padding='SAME')
+            conv5_1 = tf.nn.bias_add(conv5_1, biases)
+            conv5_1 = tf.nn.relu(conv5_1, name=scope)
 
-            x = tf.reshape(bottom, [-1, in_size])
-            fc = tf.nn.bias_add(tf.matmul(x, weights), biases)
+        with tf.name_scope('conv5_2') as scope:
+            kernel = self.get_var(shape = [3, 3, 512, 512], name = "conv5_2_W")
+            biases = self.get_var(shape=[512], name="conv5_2_b")
+            conv5_2 = tf.nn.conv2d(conv5_1, kernel, [1, 1, 1, 1], padding='SAME')
+            conv5_2 = tf.nn.bias_add(conv5_2, biases)
+            conv5_2 = tf.nn.relu(conv5_2, name=scope)
 
-            self.layers.append(fc)
+        with tf.name_scope('conv5_3') as scope:
+            kernel = self.get_var(shape = [3, 3, 512, 512], name = "conv5_3_W")
+            biases = self.get_var(shape=[256], name="conv5_3_b")
+            conv5_3 = tf.nn.conv2d(conv5_2, kernel, [1, 1, 1, 1], padding='SAME')
+            conv5_3 = tf.nn.bias_add(conv5_3, biases)
+            conv5_3 = tf.nn.relu(conv5_3, name=scope)
 
-            return fc
+        with tf.name_scope('pool5') as scope:
+            pool5 = tf.nn.avg_pool(conv5_3, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME',name=scope)
 
-    def get_conv_var(self, filter_size, in_channels, out_channels, name):
-        weights = self.get_var(name + "_weights", [filter_size, filter_size, in_channels, out_channels])
-        biases = self.get_var(name + "_biases", [out_channels])
+        with tf.name_scope('fc1') as scope:
+            shape = int(np.prod(pool5.get_shape()[1:]))
+            kernel = self.get_var(shape = [shape, 4096], name = "fc1_W")
+            biases = self.get_var(shape=[4096], name="fc1_b")
+            pool5_flat = tf.reshape(pool5, [-1, shape])
+            fc1 = tf.nn.bias_add(tf.matmul(pool5_flat, kernel), biases)
+            fc1 = tf.nn.relu(fc1)
 
-        return weights, biases
+        with tf.name_scope('fc2') as scope:
+            kernel = self.get_var(shape = [4096, 4096], name = "fc2_W")
+            biases = self.get_var(shape=[4096], name="fc2_b")
+            fc2 = tf.nn.bias_add(tf.matmul(fc1, kernel), biases)
+            fc2 = tf.nn.relu(fc2)
 
-    def get_fc_var(self, in_size, out_size, name):
-        weights = self.get_var(name + "_weights", [in_size, out_size])
-        biases = self.get_var(name + "_biases", [out_size])
+        with tf.name_scope('fc3') as scope:
+            kernel = self.get_var(shape = [4096, 1000], name = "fc3_W")
+            biases = self.get_var(shape=[4096], name="fc3_b")
+            fc3 = tf.nn.bias_add(tf.matmul(fc2, kernel), biases)
+            self.network['logits'] = fc3
 
-        return weights, biases
+        with tf.name_scope('prob_out'):
+            self.network['prob'] = tf.nn.softmax(fc3)
 
     def get_var(self, name, shape):
-        if self.data_dict is not None and name in self.data_dict:
+        if self.data_dict is not None and name in self.data_dict.keys():
             placeholder = tf.placeholder(tf.float32, shape)
-            var = tf.Variable(placeholder, name=name)
+            var = tf.get_variable(name, )
             self.var_dict[placeholder] = self.data_dict[name]
+            var = tf.get_variable(name = name, shape = shape, dtype = tf.float32, initializer=tf.constant(self.weights[name]), trainable = self.trainable)
         else:
-            var = tf.get_variable(name, shape, initializer=tf.truncated_normal_initializer(0.0, 0.001))
-
+            var = tf.get_variable(name = name, shape = shape, dtype = tf.float32, initializer=tf.truncated_normal_initializer(0.0, 0.001),
+            trainable = self.trainable)
+        variable_summaries(var)
         return var
 
     def get_feature(self):
         return self.network['prob']
 
     def get_logits(self):
-        return self.network['fc9']
+        return self.network['logits']
 
-"""
-Model interface for creating and returning network with initializer specified
-"""
+def variable_summaries(var):
+    with tf.name_scope('summaries'):
+        mean = tf.reduce_mean(var)
+    with tf.name_scope('stddev'):
+        stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+    tf.summary.scalar('mean', mean)
+    tf.summary.scalar('stddev', stddev)
+    tf.summary.scalar('max', tf.reduce_max(var))
+    tf.summary.scalar('min', tf.reduce_min(var))
+    tf.summary.histogram('histogram', var)
+
+def get_vgg_weights():
+    url = "https://www.cs.toronto.edu/~frossard/vgg16/vgg16_weights.npz"
+    project_path = os.getcwd()
+    vgg_weight_path = project_path + "/architecture/"
+    if not os.path.isfile(vgg_weight_path + "vgg16_weights.npz"):
+        print("Weight file does not exist, downloading.")
+        filename = wget.download(url, vgg_weight_path)
+        print("Downloaded "+ filename)
+    vgg_weights = np.load(vgg_weight_path + "vgg16_weights.npz")
+    return vgg_weights
+
+
 def create_model(img, args):
-    net = VGGNet()
-    net.build_model(img, args['dropout'])
+    vgg_weights = get_vgg_weights()
+    net = VGGNet(vgg_weights, args['dropout'], True)
+    net.build_model(img, True)
     return {'feature_in': img, 'feature_logits': net.get_logits() ,'feature_out': net.get_feature()}
