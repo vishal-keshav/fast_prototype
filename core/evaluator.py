@@ -19,6 +19,9 @@ import math
 import matplotlib
 import matplotlib.pyplot as plt
 
+from scipy.misc import imread, imresize
+from imagenet_classes import class_names
+
 class TensorBoard:
     def __init__(self, dir_path):
         self.dir_path = dir_path
@@ -47,9 +50,9 @@ def get_data_provider(dataset, project_path, param_dict):
     data_provider_module = importlib.import_module(data_provider_module_path)
     dp_obj = data_provider_module.get_obj(project_path)
     with tf.name_scope('input'):
-        img_batch = tf.placeholder(tf.float32, [None, 28, 28, 1])
+        img_batch = tf.placeholder(tf.float32, [None, 224, 224, 3])
     with tf.name_scope('output'):
-        label_batch = tf.placeholder(tf.int64, [None, 10])
+        label_batch = tf.placeholder(tf.int64, [None, 1000])
     return img_batch, label_batch, dp_obj
 
 def get_model(version, inputs, param_dict):
@@ -88,7 +91,8 @@ class evaluation_on_input:
             self.saver.restore(self.sess, chk_name)
         else:
             print("Session cannot be restored")
-            sys.exit()
+            self.sess.run(tf.global_variables_initializer())
+            #sys.exit()
 
     def evaluate(self, tf_op, feed_dict):
         op_out = self.sess.run(tf_op, feed_dict)
@@ -113,6 +117,13 @@ def test_accuracy_confusion(e):
     feed_dict = {img_placeholder: img_validation_data, label_placeholder: label_validation_data}
     confusion_matrix = e.evaluate(confusion_matrix_op, feed_dict)
     print(confusion_matrix)
+
+def predict_label(e, input):
+    img_placeholder, label_placeholder = e.get_placeholders()
+    model = e.get_model()
+    feed_dict = {img_placeholder: input}
+    op = model['feature_out']
+    return op, feed_dict
 
 def generate_layer_activation(e, input):
     img_placeholder, label_placeholder = e.get_placeholders()
@@ -139,8 +150,15 @@ def evaluation_on_sample(e, args, project_path, all=True):
         os.mkdir(write_path)
     sample_files = [f for f in listdir(sample_path) if isfile(join(sample_path, f))]
     for file in sample_files:
-        input = cv2.imread(sample_path + file, 0)
-        input = input.reshape((1,28,28,1))/255.0
+        """input = cv2.imread(sample_path + file, 0)
+        input = input.reshape((1,28,28,1))/255.0"""
+        input = imread(sample_path + file, mode='RGB')
+        input = imresize(input, (224, 224)).reshape(1, 224, 224, 3)
+        op_prob, feed_prob = predict_label(e, input)
+        prob = e.evaluate(op_prob, feed_prob)
+        preds = (np.argsort(prob)[::-1])[0][0:5]
+        for p in preds:
+            print(class_names[p], prob[0][p])
         op, feed_dict = generate_layer_activation(e, input)
         out = e.evaluate(op, feed_dict)
         plot_activation(out, write_path)
@@ -148,8 +166,8 @@ def evaluation_on_sample(e, args, project_path, all=True):
 
 def execute(args):
     project_path = os.getcwd()
-    tensorboard_evaluation(args, project_path)
-    profile_model(args, project_path)
+    #tensorboard_evaluation(args, project_path)
+    #profile_model(args, project_path)
     eval_obj = evaluation_on_input(args, project_path)
-    test_accuracy_confusion(eval_obj)
+    #test_accuracy_confusion(eval_obj)
     evaluation_on_sample(eval_obj,args, project_path)

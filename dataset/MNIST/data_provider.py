@@ -1,5 +1,5 @@
 """
-Data provider for CIFAR-10
+Data provider for MNIST
 """
 
 import tensorflow as tf

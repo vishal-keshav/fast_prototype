@@ -33,7 +33,7 @@ class VGGNet:
             with tf.variable_scope("vgg16", reuse = tf.AUTO_REUSE):
                 self._build_model(img)
         else:
-            self.build_model(img)
+            self._build_model(img)
 
     """
     Builds the model
@@ -49,6 +49,7 @@ class VGGNet:
             conv1_1 = tf.nn.conv2d(input, kernel, [1, 1, 1, 1], padding='SAME')
             conv1_1 = tf.nn.bias_add(conv1_1, biases)
             conv1_1 = tf.nn.relu(conv1_1, name=scope)
+            self.network['conv1_1'] = conv1_1
 
         with tf.name_scope('conv1_2') as scope:
             kernel = self.get_var(shape = [3, 3, 64, 64], name = "conv1_2_W")
@@ -117,7 +118,7 @@ class VGGNet:
 
         with tf.name_scope('conv4_3') as scope:
             kernel = self.get_var(shape = [3, 3, 512, 512], name = "conv4_3_W")
-            biases = self.get_var(shape=[256], name="conv4_3_b")
+            biases = self.get_var(shape=[512], name="conv4_3_b")
             conv4_3 = tf.nn.conv2d(conv4_2, kernel, [1, 1, 1, 1], padding='SAME')
             conv4_3 = tf.nn.bias_add(conv4_3, biases)
             conv4_3 = tf.nn.relu(conv4_3, name=scope)
@@ -141,7 +142,7 @@ class VGGNet:
 
         with tf.name_scope('conv5_3') as scope:
             kernel = self.get_var(shape = [3, 3, 512, 512], name = "conv5_3_W")
-            biases = self.get_var(shape=[256], name="conv5_3_b")
+            biases = self.get_var(shape=[512], name="conv5_3_b")
             conv5_3 = tf.nn.conv2d(conv5_2, kernel, [1, 1, 1, 1], padding='SAME')
             conv5_3 = tf.nn.bias_add(conv5_3, biases)
             conv5_3 = tf.nn.relu(conv5_3, name=scope)
@@ -165,7 +166,7 @@ class VGGNet:
 
         with tf.name_scope('fc8') as scope:
             kernel = self.get_var(shape = [4096, 1000], name = "fc8_W")
-            biases = self.get_var(shape=[4096], name="fc8_b")
+            biases = self.get_var(shape=[1000], name="fc8_b")
             fc8 = tf.nn.bias_add(tf.matmul(fc7, kernel), biases)
             self.network['logits'] = fc8
 
@@ -186,6 +187,9 @@ class VGGNet:
 
     def get_logits(self):
         return self.network['logits']
+
+    def get_network(self):
+        return self.network
 
 def variable_summaries(var):
     with tf.name_scope('summaries'):
@@ -212,6 +216,7 @@ def get_vgg_weights():
 
 def create_model(img, args):
     vgg_weights = get_vgg_weights()
-    net = VGGNet(vgg_weights, args['dropout'], True)
+    #vgg_weights = None
+    net = VGGNet(vgg_weights, args['dropout'], False)
     net.build_model(img, True)
-    return {'feature_in': img, 'feature_logits': net.get_logits() ,'feature_out': net.get_feature()}
+    return {'feature_in': img, 'feature_logits': net.get_logits() ,'feature_out': net.get_feature(), 'layer_1': net.get_network()['conv1_1']}
