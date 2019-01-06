@@ -51,13 +51,3 @@ class HyperParameters:
     def reset_params(self):
         self.parameter_list = {}
         self.dump_parameter()
-
-#abolute_path = "/home/vishal/ml_prototype/"
-#h = HyperParameters(1,abolute_path)
-#h.add_parameter("EPOCH", 10)
-#h.add_parameter("GPU_ENABLED", True)
-#h.dump_parameter()
-#h.read_parameter()
-#print(h.get_value("BATCH"))
-#dict = h.get_params()
-#print(dict)

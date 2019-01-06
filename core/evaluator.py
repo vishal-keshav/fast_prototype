@@ -71,9 +71,6 @@ def profile_model(args, project_path):
     profile_obj.profile_nodes()
     tf.reset_default_graph()
 
-# TODO: later on, create a mechenasim to read the sample
-# inputs from a smaple folder, and evalute the network
-# with key presses until all samples are done
 class evaluation_on_input:
     def __init__(self, args, project_path):
         tf.reset_default_graph()
@@ -151,8 +148,8 @@ def evaluation_on_sample(e, args, project_path, all=True):
 
 def execute(args):
     project_path = os.getcwd()
-    #tensorboard_evaluation(args, project_path)
-    #profile_model(args, project_path)
+    tensorboard_evaluation(args, project_path)
+    profile_model(args, project_path)
     eval_obj = evaluation_on_input(args, project_path)
-    #test_accuracy_confusion(eval_obj)
+    test_accuracy_confusion(eval_obj)
     evaluation_on_sample(eval_obj,args, project_path)

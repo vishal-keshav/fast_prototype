@@ -22,24 +22,23 @@ class VGGNet:
         else:
             self.data_dict = None
         self.trainable = trainable
-        self.reuse = var_reuse
         self.dropout = dropout
         self.network = {}
 
     """
     Wrapper on varable re-use
     """
-    def build_model(self, img, var_reuse):
+    def build_model(self, img, var_reuse = False):
         if var_reuse:
             with tf.variable_scope("vgg16", reuse = tf.AUTO_REUSE):
-                self.build_model(img)
+                self._build_model(img)
         else:
             self.build_model(img)
 
     """
     Builds the model
     """
-    def build_model(self, img):
+    def _build_model(self, img):
         with tf.name_scope('preprocess') as scope:
             mean = tf.constant([123.68, 116.779, 103.939], dtype=tf.float32, shape=[1, 1, 1, 3], name='img_mean')
             input = img-mean
@@ -150,35 +149,32 @@ class VGGNet:
         with tf.name_scope('pool5') as scope:
             pool5 = tf.nn.avg_pool(conv5_3, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME',name=scope)
 
-        with tf.name_scope('fc1') as scope:
+        with tf.name_scope('fc6') as scope:
             shape = int(np.prod(pool5.get_shape()[1:]))
-            kernel = self.get_var(shape = [shape, 4096], name = "fc1_W")
-            biases = self.get_var(shape=[4096], name="fc1_b")
+            kernel = self.get_var(shape = [shape, 4096], name = "fc6_W")
+            biases = self.get_var(shape=[4096], name="fc6_b")
             pool5_flat = tf.reshape(pool5, [-1, shape])
-            fc1 = tf.nn.bias_add(tf.matmul(pool5_flat, kernel), biases)
-            fc1 = tf.nn.relu(fc1)
+            fc6 = tf.nn.bias_add(tf.matmul(pool5_flat, kernel), biases)
+            fc6 = tf.nn.relu(fc6)
 
-        with tf.name_scope('fc2') as scope:
-            kernel = self.get_var(shape = [4096, 4096], name = "fc2_W")
-            biases = self.get_var(shape=[4096], name="fc2_b")
-            fc2 = tf.nn.bias_add(tf.matmul(fc1, kernel), biases)
-            fc2 = tf.nn.relu(fc2)
+        with tf.name_scope('fc7') as scope:
+            kernel = self.get_var(shape = [4096, 4096], name = "fc7_W")
+            biases = self.get_var(shape=[4096], name="fc7_b")
+            fc7 = tf.nn.bias_add(tf.matmul(fc6, kernel), biases)
+            fc7 = tf.nn.relu(fc7)
 
-        with tf.name_scope('fc3') as scope:
-            kernel = self.get_var(shape = [4096, 1000], name = "fc3_W")
-            biases = self.get_var(shape=[4096], name="fc3_b")
-            fc3 = tf.nn.bias_add(tf.matmul(fc2, kernel), biases)
-            self.network['logits'] = fc3
+        with tf.name_scope('fc8') as scope:
+            kernel = self.get_var(shape = [4096, 1000], name = "fc8_W")
+            biases = self.get_var(shape=[4096], name="fc8_b")
+            fc8 = tf.nn.bias_add(tf.matmul(fc7, kernel), biases)
+            self.network['logits'] = fc8
 
         with tf.name_scope('prob_out'):
-            self.network['prob'] = tf.nn.softmax(fc3)
+            self.network['prob'] = tf.nn.softmax(fc8)
 
     def get_var(self, name, shape):
         if self.data_dict is not None and name in self.data_dict.keys():
-            placeholder = tf.placeholder(tf.float32, shape)
-            var = tf.get_variable(name, )
-            self.var_dict[placeholder] = self.data_dict[name]
-            var = tf.get_variable(name = name, shape = shape, dtype = tf.float32, initializer=tf.constant(self.weights[name]), trainable = self.trainable)
+            var = tf.get_variable(initializer=tf.constant(self.data_dict[name]), trainable = self.trainable, name = name)
         else:
             var = tf.get_variable(name = name, shape = shape, dtype = tf.float32, initializer=tf.truncated_normal_initializer(0.0, 0.001),
             trainable = self.trainable)
@@ -205,7 +201,7 @@ def variable_summaries(var):
 def get_vgg_weights():
     url = "https://www.cs.toronto.edu/~frossard/vgg16/vgg16_weights.npz"
     project_path = os.getcwd()
-    vgg_weight_path = project_path + "/architecture/"
+    vgg_weight_path = project_path + "/architecture/version1/"
     if not os.path.isfile(vgg_weight_path + "vgg16_weights.npz"):
         print("Weight file does not exist, downloading.")
         filename = wget.download(url, vgg_weight_path)

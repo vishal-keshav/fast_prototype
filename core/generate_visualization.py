@@ -18,7 +18,7 @@ def get_model(model_version, param_version, project_path):
     param_dict = hp_obj.get_params()
     model_module_path = "architecture.version" + str(model_version) + ".model"
     model_module = importlib.import_module(model_module_path)
-    inputs = tf.placeholder(tf.float32, shape = (1, 28, 28, 1))
+    inputs = tf.placeholder(tf.float32, shape = (1, 224, 224, 3))
     model = model_module.create_model(inputs, param_dict)
     return model
 
