@@ -3,13 +3,13 @@
 This repository contains an easy-to-use and easy-to-follow heirarchy of code base :octocat: that aids in conducting Machine Learning research. Internally, the code base relies on tensorflow framework, but same coding style can be incorporated with any ML library such as py-torch and caffe. Each file in this project has been written by keeping one thing in mind: **multiple experimentation with several revisions of ML models and several revisions of hyper-parameters**. Thus, this code-base is an intial step to manage the experiments in a systematic way and track multiple results with ample amount of visualization. :muscle:
 
 ## Dependency
-`numpy` `ntfy` `slackclient` `ntfy[slack]` `tensorflow` or `tensorflow_gpu` `keyboard` `opencv_python` `netron` `wget` `pathlib` `statistics` `argparse`
+`numpy` `ntfy` `slackclient` `ntfy[slack]` `tensorflow` or `tensorflow_gpu` `keyboard` `opencv_python` `netron` `wget` `pathlib` `statistics` `argparse` `scikit-optimize` `matplotlib` `scipy` `Pillow`
 
 Tested on python version 2
 All packages can be updated/installed with `pip install -r requirements.txt` except `ntfy[slack]`. Install `ntfy[slack]` seperately with `pip install ntfy[slack]` post requirements.txt installation.
 
 ## About the code-base
-The main controller is *master.py*. There are two parts which is detailed description.
+The main controller is *master.py*. There are two parts which is needed to be detailed.
 * How to make use of this code-base in your own projects.
 * Where should you make changes.
 
