@@ -11,3 +11,6 @@ pathlib
 statistics
 argparse
 scikit-optimize
+matplotlib
+scipy
+Pillow

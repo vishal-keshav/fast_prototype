@@ -123,7 +123,7 @@ def predict_label(e, input):
     model = e.get_model()
     feed_dict = {img_placeholder: input}
     op = model['feature_out']
-    return op, feed_dict
+    return op,feed_dict
 
 def generate_layer_activation(e, input):
     img_placeholder, label_placeholder = e.get_placeholders()
@@ -155,14 +155,15 @@ def evaluation_on_sample(e, args, project_path, all=True):
         input = imread(sample_path + file, mode='RGB')
         input = imresize(input, (224, 224)).reshape(1, 224, 224, 3)
         op_prob, feed_prob = predict_label(e, input)
-        prob = e.evaluate(op_prob, feed_prob)
-        preds = (np.argsort(prob)[::-1])[0][0:5]
+        prob = e.evaluate(op_prob, feed_prob)[0]
+        preds = (np.argsort(prob)[::-1])[0:5]
         for p in preds:
-            print(class_names[p], prob[0][p])
+            print(class_names[p], prob[p])
         op, feed_dict = generate_layer_activation(e, input)
         out = e.evaluate(op, feed_dict)
         plot_activation(out, write_path)
-        programPause = raw_input("Press the <ENTER> key to move on.")
+        # Not working with python 3
+        #programPause = raw_input("Press the <ENTER> key to move on.")
 
 def execute(args):
     project_path = os.getcwd()
