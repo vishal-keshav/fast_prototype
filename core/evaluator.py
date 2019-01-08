@@ -8,6 +8,9 @@ Evaluation of a trained model includes:
 import tensorflow as tf
 from tensorboard import default
 from tensorboard import program
+from tensorflow.python.platform import gfile
+from tensorflow.python.framework import graph_util
+from tensorflow.python.framework import graph_io
 import os
 from os import listdir
 from os.path import isfile, join
@@ -73,6 +76,35 @@ def profile_model(args, project_path):
     profile_obj.profile_flops()
     profile_obj.profile_nodes()
     tf.reset_default_graph()
+
+def create_model(args, project_path):
+    tf.reset_default_graph()
+    if not args.create_model:
+        return
+    logs_path = project_path + "/checkpoint/checkpoint_" + str(args.model) + \
+                "_" + str(args.param) + "_" + args.dataset
+    chk_name = os.path.join(logs_path, 'model.ckpt')
+    saver = tf.train.import_meta_graph(chk_name + '.meta', clear_devices=True)
+    sess = tf.Session()
+    saver.restore(sess, chk_name)
+    graph = tf.get_default_graph()
+    for op in graph.get_operations():
+        print (op.name)
+    input_node_names = "input/Placeholder"
+    output_node_names = "layer_4/Softmax"
+    output_graph_def = graph_util.convert_variables_to_constants(sess,
+        graph.as_graph_def(), output_node_names.split(","))
+    out_path = project_path + "/result/model_" + str(args.model) + \
+                "_" + str(args.param) + "_" + args.dataset
+    graph_io.write_graph(output_graph_def, out_path,'model_pb.pb', as_text=False)
+    graph_def_file = "/path/to/Downloads/mobilenet_v1_1.0_224/frozen_graph.pb"
+    input_arrays = [input_node_names]
+    output_arrays = [output_node_names]
+    converter = tf.contrib.lite.TFLiteConverter.from_frozen_graph( out_path + "/model_pb.pb",
+                    input_arrays, output_arrays)
+    tflite_model = converter.convert()
+    open(out_path + "/model_tflite.tflite", "wb").write(tflite_model)
+
 
 class evaluation_on_input:
     def __init__(self, args, project_path):
@@ -168,6 +200,7 @@ def execute(args):
     project_path = os.getcwd()
     #tensorboard_evaluation(args, project_path)
     #profile_model(args, project_path)
-    eval_obj = evaluation_on_input(args, project_path)
+    #eval_obj = evaluation_on_input(args, project_path)
     #test_accuracy_confusion(eval_obj)
-    evaluation_on_sample(eval_obj,args, project_path)
+    #evaluation_on_sample(eval_obj,args, project_path)
+    #create_model(args, project_path)

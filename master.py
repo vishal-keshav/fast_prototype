@@ -25,6 +25,7 @@ def argument_parser():
     parser.add_argument('--dataset', default='MNIST', type=str, help='Dataset')
     parser.add_argument('--download', default=False, type=bool, help='Download dataset?')
     parser.add_argument('--preprocess', default=False, type=bool, help='Preprocess dataset?')
+    parser.add_argument('--create_model', default=False, type=bool, help='Create Model from trained data?')
     parser.add_argument('--view', default=False, type=bool, help='View Sample dataset?')
     parser.add_argument('--viewtype', default='model', type=str, help='Type of visualization?')
     parser.add_argument('--notify', default=False, type=bool, help='Training notification?')

@@ -14,3 +14,4 @@ debug/summary_3_3_MNIST
 debug/opt_3_3_MNIST/
 architecture/version1/vgg16_weights.npz
 debug/model.pbtxt
+result/model_3_3_MNIST
