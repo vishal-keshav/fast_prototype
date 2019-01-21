@@ -1,6 +1,17 @@
-# A more systematic approach for prototyping research ideas
+# A more systematic approach to prototype research ideas
 
 This repository contains an easy-to-use and easy-to-follow heirarchy of code base :octocat: that aids in conducting Machine Learning research. Internally, the code base relies on tensorflow framework, but same coding style can be incorporated with any ML library such as py-torch and caffe. Each file in this project has been written by keeping one thing in mind: **multiple experimentation with several revisions of ML models and several revisions of hyper-parameters**. Thus, this code-base is an intial step to manage the experiments in a systematic way and track multiple results with ample amount of visualization. :muscle:
+
+# Some key features
+1. Bayesian optimizer for hyper-parameter search before you start your training.
+2. Inclusion of ready to use popular dataset processing scripts.
+3. Takes full advange of tensorflow fast data pipeline and efficient GPU computation algorithms.
+4. Get notifications of the training progress on your mobile-phone.
+5. Highly extensible and easy to modify source code.
+
+# Up coming features
+1. An extensive guide to make this framework highly useful for your projects
+2. Some interesting visualization
 
 ## Dependency
 `numpy` `ntfy` `slackclient` `ntfy[slack]` `tensorflow` or `tensorflow_gpu` `keyboard` `opencv_python` `netron` `wget` `pathlib` `statistics` `argparse` `scikit-optimize` `matplotlib` `scipy` `Pillow`
