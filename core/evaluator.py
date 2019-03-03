@@ -1,8 +1,10 @@
 """
 Evaluation of a trained model includes:
-1. Variance-bias tradeoff. Showing the training accuracy/loss and validation accuracy/loss with respect to time
+1. Variance-bias tradeoff. Showing the training accuracy/loss and validation
+    accuracy/loss with respect to time
 2. Different accuracy metrics for test dataset (example: confusion matrix)
-3. Other use-case dependent intermediate outputs such as weights and feature outputs.
+3. Other use-case dependent intermediate outputs such as weights and feature
+    outputs.
 """
 
 import tensorflow as tf
@@ -30,7 +32,8 @@ class TensorBoard:
         self.dir_path = dir_path
 
     def run(self):
-        tb = program.TensorBoard(default.get_plugins(), default.get_assets_zip_provider())
+        tb = program.TensorBoard(default.get_plugins(),
+                                 default.get_assets_zip_provider())
         tb.configure(argv=[None, '--logdir', self.dir_path])
         url = tb.launch()
         print('TensorBoard at %s \n' % url)
@@ -100,8 +103,8 @@ def create_model(args, project_path):
     graph_def_file = "/path/to/Downloads/mobilenet_v1_1.0_224/frozen_graph.pb"
     input_arrays = [input_node_names]
     output_arrays = [output_node_names]
-    converter = tf.contrib.lite.TFLiteConverter.from_frozen_graph( out_path + "/model_pb.pb",
-                    input_arrays, output_arrays)
+    converter = tf.contrib.lite.TFLiteConverter.from_frozen_graph( out_path +
+                                    "/model_pb.pb", input_arrays, output_arrays)
     tflite_model = converter.convert()
     open(out_path + "/model_tflite.tflite", "wb").write(tflite_model)
 
@@ -111,10 +114,11 @@ class evaluation_on_input:
         tf.reset_default_graph()
         self.project_path = project_path
         self.param_dict = get_hyper_parameters(args.param, self.project_path)
-        self.img_batch, self.label_batch, self.dp = get_data_provider(args.dataset, self.project_path, self.param_dict)
+        self.img_batch, self.label_batch, self.dp = get_data_provider(
+                               args.dataset, self.project_path, self.param_dict)
         self.model = get_model(args.model, self.img_batch, self.param_dict)
         self.args = args
-        logs_path = project_path + "/checkpoint/checkpoint_" + str(args.model) + \
+        logs_path = project_path + "/checkpoint/checkpoint_" +str(args.model)+ \
                     "_" + str(args.param) + "_" + args.dataset
         chk_name = os.path.join(logs_path, 'model.ckpt')
         self.saver = tf.train.Saver()
@@ -144,9 +148,12 @@ def test_accuracy_confusion(e):
     model = e.get_model()
     dp = e.get_data_provider()
     output_probability = model['feature_out']
-    confusion_matrix_op = tf.confusion_matrix(tf.argmax(label_placeholder, axis=1), tf.argmax(output_probability, axis=1))
+    confusion_matrix_op = tf.confusion_matrix(
+                                          tf.argmax(label_placeholder, axis=1),
+                                          tf.argmax(output_probability, axis=1))
     img_validation_data, label_validation_data = dp.validation()
-    feed_dict = {img_placeholder: img_validation_data, label_placeholder: label_validation_data}
+    feed_dict = {img_placeholder: img_validation_data,
+                 label_placeholder: label_validation_data}
     confusion_matrix = e.evaluate(confusion_matrix_op, feed_dict)
     print(confusion_matrix)
 
@@ -177,11 +184,12 @@ def plot_activation(feature, path):
 
 def evaluation_on_sample(e, args, project_path, all=True):
     sample_path = project_path + "/dataset/" + args.dataset + "/sample/"
-    write_path = project_path + "/visualization/vis" + str(args.model) + "_" + str(args.param) + "_" + args.dataset
+    write_path = project_path + "/visualization/vis" + str(args.model) + "_" +
+                                            str(args.param) + "_" + args.dataset
     if not os.path.isdir(write_path):
         os.mkdir(write_path)
-    sample_files = [f for f in listdir(sample_path) if isfile(join(sample_path, f))]
-    for file in sample_files:
+    smple_files=[f for f in listdir(sample_path) if isfile(join(sample_path,f))]
+    for file in smple_files:
         """input = cv2.imread(sample_path + file, 0)
         input = input.reshape((1,28,28,1))/255.0"""
         input = imread(sample_path + file, mode='RGB')

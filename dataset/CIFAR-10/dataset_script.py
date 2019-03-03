@@ -37,7 +37,7 @@ class CIFAR_10:
             os.mkdir(dataset_path + "/pre-processed")
         writer = tf.python_io.TFRecordWriter(out_file)
         for i in range(1,6):
-            filename = dataset_path + "/raw/" + raw_folder + "/data_batch_" + str(i)
+            filename = dataset_path + "/raw/" + raw_folder+"/data_batch_"+str(i)
             f = open(filename, 'rb')
             dict = cPickle.load(f)
             images = dict['data']
@@ -51,7 +51,8 @@ class CIFAR_10:
                         features=tf.train.Features(
                             feature = {
                                 'img': tf.train.Feature(
-                                    bytes_list=tf.train.BytesList(value=[img.tostring()])
+                                    bytes_list=tf.train.BytesList(
+                                                         value=[img.tostring()])
                                 ),
                                 'label': tf.train.Feature(
                                     int64_list=tf.train.Int64List(value=[label])

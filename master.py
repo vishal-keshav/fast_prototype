@@ -2,9 +2,7 @@
 
 Project Name: Prototype_v1
 Author: Vishal Keshav
-Based on: Self
 Email: vishal.keshav.1993@gmail.com
-External link: None
 
 """
 
@@ -17,20 +15,29 @@ import argparse
 
 # Program meta-data
 program_name = "Prototype_v1"
-program_details = "A systematic ML project prototyping"
+prog_details = "A systematic ML project prototyping"
 
 def argument_parser():
-    parser = argparse.ArgumentParser(description=program_name + " : " + program_details)
+    parser = argparse.ArgumentParser(description=program_name+":"+ prog_details)
     parser.add_argument('--phase', default='all', type=str, help='Phase')
-    parser.add_argument('--dataset', default='MNIST', type=str, help='Dataset')
-    parser.add_argument('--download', default=False, type=bool, help='Download dataset?')
-    parser.add_argument('--preprocess', default=False, type=bool, help='Preprocess dataset?')
-    parser.add_argument('--create_model', default=False, type=bool, help='Create Model from trained data?')
-    parser.add_argument('--view', default=False, type=bool, help='View Sample dataset?')
-    parser.add_argument('--viewtype', default='model', type=str, help='Type of visualization?')
-    parser.add_argument('--notify', default=False, type=bool, help='Training notification?')
-    parser.add_argument('--model', default=1, type=int, help='Model Version')
-    parser.add_argument('--param', default=1, type=int, help='Hyper-parameter Version')
+    parser.add_argument('--dataset', default='MNIST', type=str,
+                        help='Dataset')
+    parser.add_argument('--download', default=False, type=bool,
+                        help='Download dataset?')
+    parser.add_argument('--preprocess', default=False, type=bool,
+                        help='Preprocess dataset?')
+    parser.add_argument('--create_model', default=False, type=bool,
+                        help='Create Model from trained data?')
+    parser.add_argument('--view', default=False, type=bool,
+                        help='View Sample dataset?')
+    parser.add_argument('--viewtype', default='model', type=str,
+                        help='Type of visualization?')
+    parser.add_argument('--notify', default=False, type=bool,
+                        help='Training notification?')
+    parser.add_argument('--model', default=1, type=int,
+                        help='Model Version')
+    parser.add_argument('--param', default=1, type=int,
+                        help='Hyper-parameter Version')
     args = parser.parse_args()
     return args
 

@@ -52,7 +52,8 @@ class notification:
         self.message = msg
 
     def send_notification(self):
-        notify(self.title, self.message, token = self.token, recipient = self.recipient)
+        notify(self.title, self.message, token = self.token,
+                                                     recipient = self.recipient)
 
     def set_and_notify(self, msg):
         self.set_message(msg)

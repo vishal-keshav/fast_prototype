@@ -52,11 +52,17 @@ def sanity_check(param_dict, param_dict_space):
             default_param_value.append(value)
             param_space = param_dict_space[key]
             if param_space["type"] == "Int":
-                temp_skopt_var = Integer(low=param_space["low"], high=param_space["high"], name=str(key))
+                temp_skopt_var = Integer(low=param_space["low"],
+                                         high=param_space["high"],
+                                         name=str(key))
             elif param_space["type"] == "Real":
-                temp_skopt_var = Real(low=param_space["low"], high=param_space["high"], prior=param_space["prior"], name=str(key))
+                temp_skopt_var = Real(low=param_space["low"],
+                                      high=param_space["high"],
+                                      prior=param_space["prior"],
+                                      name=str(key))
             else:
-                temp_skopt_var = Categorical(categories=param_space["catagories"], name=str(key))
+                temp_skopt_var=Categorical(categories=param_space["catagories"],
+                                           name=str(key))
             space_dimensions.append(temp_skopt_var)
         else:
             print(key + " has no space defined in param_space")
@@ -85,13 +91,14 @@ def optimisation(label_batch, logits, param_dict):
                         labels=label_batch, logits=logits))
     tf.summary.scalar('loss', loss_op)
     with tf.name_scope('gradient_optimisation'):
-        gradient_optimizer_op = tf.train.AdamOptimizer(param_dict['learning_rate'])
-        gd_opt_op = gradient_optimizer_op.minimize(loss_op)
+        gradient_opt_op = tf.train.AdamOptimizer(param_dict['learning_rate'])
+        gd_opt_op = gradient_opt_op.minimize(loss_op)
     return loss_op, gd_opt_op
 
 def accuracy(predictions, labels):
     with tf.name_scope('accuracy'):
-        correct_prediction = tf.equal(tf.argmax(predictions, 1), tf.argmax(labels,1))
+        correct_prediction = tf.equal(tf.argmax(predictions, 1),
+                                                            tf.argmax(labels,1))
         accuracy = 100*tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     tf.summary.scalar('accuracy', accuracy)
     return accuracy
@@ -119,7 +126,8 @@ def fitness(param_space_values):
             param_dict[key] = value
     ########### param_dict creation complete ################
     # Define the data provider module
-    img_batch, label_batch, dp = get_data_provider(args.dataset, project_path, param_dict)
+    img_batch, label_batch, dp = get_data_provider(args.dataset,
+                                                       project_path, param_dict)
     dp.set_batch(param_dict['BATCH_SIZE'])
     # Construct a model to be trained
     model = get_model(args.model, img_batch, param_dict)
@@ -135,13 +143,18 @@ def fitness(param_space_values):
                 "_" + str(args.param) + "_" + args.dataset
     # Start a session
     with tf.Session() as sess:
-        train_writer = tf.summary.FileWriter(summary_path + '/' + log_file_suffix(param_space_values), sess.graph)
+        train_writer = tf.summary.FileWriter(summary_path + '/' +
+                                log_file_suffix(param_space_values), sess.graph)
         sess.run(tf.global_variables_initializer())
         for nr_epochs in range(param_dict['NUM_EPOCHS']):
             for i in range(5):
                 img_batch_data, label_batch_data = dp.next()
-                feed_dict = {img_batch: img_batch_data, label_batch: label_batch_data}
-                _, out, loss, accu, summary = sess.run([gd_opt_op,output_probability,loss_op, accuracy_op, summary_op], feed_dict = feed_dict)
+                feed_dict = {img_batch: img_batch_data,
+                             label_batch: label_batch_data}
+                _, out, loss, accu, summary = sess.run(
+                                            [gd_opt_op,output_probability,
+                                             loss_op, accuracy_op, summary_op],
+                                            feed_dict = feed_dict)
                 train_writer.add_summary(summary, nr_epochs*10 + i)
         train_writer.close()
     tf.reset_default_graph()
@@ -152,7 +165,7 @@ def execute(arguments):
     global args
     args = arguments
     project_path = os.getcwd()
-    param_dict, param_dict_space = get_hyper_parameters(args.param, project_path)
+    param_dict, param_dict_space = get_hyper_parameters(args.param,project_path)
     sanity_check(param_dict, param_dict_space)
     if not default_param_name:
         print("Fix your param, exiting")

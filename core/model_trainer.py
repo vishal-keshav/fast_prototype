@@ -1,7 +1,8 @@
 """
 Trainer script requires these:
 1. A well defined model (as indiciated by model version)
-2. A set of hyper-parameters used by the model and training script (indicated by version)
+2. A set of hyper-parameters used by the model and training script (indicated
+    by version)
 3. A data provider (as indicated by dataset name)
 
 Once, all the above modules are available (after sanity check),
@@ -51,8 +52,8 @@ def optimisation(label_batch, logits, param_dict):
                         labels=label_batch, logits=logits))
     tf.summary.scalar('loss', loss_op)
     with tf.name_scope('gradient_optimisation'):
-        gradient_optimizer_op = tf.train.AdamOptimizer(param_dict['learning_rate'])
-        gd_opt_op = gradient_optimizer_op.minimize(loss_op)
+        gradient_opt_op = tf.train.AdamOptimizer(param_dict['learning_rate'])
+        gd_opt_op = gradient_opt_op.minimize(loss_op)
     return loss_op, gd_opt_op
 
 def get_logger(keys, notify):
@@ -62,7 +63,8 @@ def get_logger(keys, notify):
 
 def accuracy(predictions, labels):
     with tf.name_scope('accuracy'):
-        correct_prediction = tf.equal(tf.argmax(predictions, 1), tf.argmax(labels,1))
+        correct_prediction = tf.equal(tf.argmax(predictions, 1),
+                                      tf.argmax(labels,1))
         accuracy = 100*tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     tf.summary.scalar('accuracy', accuracy)
     return accuracy
@@ -76,7 +78,8 @@ def execute(args):
     project_path = os.getcwd()
     param_dict = get_hyper_parameters(args.param, project_path)
     # Define the data provider module
-    img_batch, label_batch, dp = get_data_provider(args.dataset, project_path, param_dict)
+    img_batch, label_batch, dp = get_data_provider(args.dataset,
+                                                       project_path, param_dict)
     dp.set_batch(param_dict['BATCH_SIZE'])
     # Construct a model to be trained
     model = get_model(args.model, img_batch, param_dict)
@@ -102,7 +105,7 @@ def execute(args):
                 "_" + str(args.param) + "_" + args.dataset
     # Start a session
     with tf.Session() as sess:
-        train_writer = tf.summary.FileWriter(summary_path + '/train', sess.graph)
+        train_writer = tf.summary.FileWriter(summary_path + '/train',sess.graph)
         validation_writer = tf.summary.FileWriter(summary_path + '/validation')
         if tf.train.checkpoint_exists(chk_name):
             sess.run(tf.global_variables_initializer())
@@ -115,12 +118,17 @@ def execute(args):
         for nr_epochs in range(param_dict['NUM_EPOCHS']):
             for i in range(10):
                 img_batch_data, label_batch_data = dp.next()
-                feed_dict = {img_batch: img_batch_data, label_batch: label_batch_data}
-                _, out, loss, accu, summary = sess.run([gd_opt_op,output_probability,loss_op, accuracy_op, summary_op], feed_dict = feed_dict)
+                feed_dict = {img_batch: img_batch_data,
+                             label_batch: label_batch_data}
+                _, out, loss, accu, summary = sess.run(
+                                        [gd_opt_op,output_probability,loss_op,
+                                         accuracy_op, summary_op],
+                                        feed_dict = feed_dict)
                 train_writer.add_summary(summary, nr_epochs*10 + i)
 
                 img_validation_data, label_validation_data = dp.validation()
-                feed_dict = {img_batch: img_validation_data, label_batch: label_validation_data}
+                feed_dict = {img_batch: img_validation_data,
+                             label_batch: label_validation_data}
                 summary = sess.run(summary_op, feed_dict = feed_dict)
                 validation_writer.add_summary(summary, nr_epochs*10 + i)
                 log_list = {'loss': loss, 'accuracy': accu}

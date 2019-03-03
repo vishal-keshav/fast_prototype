@@ -26,7 +26,7 @@ def execute(args):
     project_path = os.getcwd()
     #model = get_model(args.model, args.param, project_path)
     #sess = tf.Session()
-    #tf.train.write_graph(sess.graph_def, project_path + "/debug", 'model.pbtxt')
+    #tf.train.write_graph(sess.graph_def, project_path + "/debug",'model.pbtxt')
     #netron.start(project_path+"/debug/model.pbtxt")
     tflite_path = project_path + "/result/model_" + str(args.model) + \
                 "_" + str(args.param) + "_" + args.dataset

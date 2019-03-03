@@ -15,7 +15,8 @@ class DataSet:
         dataset_module_path = "dataset." + self.dataset_name + ".dataset_script"
         dataset_module = importlib.import_module(dataset_module_path)
         self.dataset_obj = dataset_module.get_obj(absolute_path)
-        data_provider_module_path = "dataset." + self.dataset_name + ".data_provider"
+        data_provider_module_path = "dataset." + self.dataset_name +
+                                    ".data_provider"
         data_provider_module = importlib.import_module(data_provider_module_path)
         self.data_provider = data_provider_module.get_obj(absolute_path)
 

@@ -12,7 +12,6 @@ class data_provider_MNIST:
         self.absolute_path = absolute_path
         from tensorflow.examples.tutorials.mnist import input_data
         self.mnist = input_data.read_data_sets("MNIST_data/", one_hot = True)
-        # for validation (for now, just for defining the API, we treat test set as validation set)
         test_x, test_y = self.mnist.test.images, self.mnist.test.labels
         self.validation_x = np.array(test_x).reshape((-1, 28, 28, 1))
         self.validation_y = np.array(test_y)
