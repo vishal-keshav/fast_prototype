@@ -1,3 +1,11 @@
+```
+NOTICE: I am upgrading this framework to tensorflow 2.0 and adding some more
+        features related to easy transfer learning and network surgery.
+        Mobilenetv1 training with imagenet data will be reported soon.
+
+        If some feature is not working, kindly let me know.
+```
+
 # A more systematic approach to prototype research ideas
 
 This repository contains an easy-to-use and easy-to-follow heirarchy of code base :octocat: that aids in conducting Machine Learning research. Internally, the code base relies on tensorflow framework, but same coding style can be incorporated with any ML library such as py-torch and caffe. Each file in this project has been written by keeping one thing in mind: **multiple experimentation with several revisions of ML models and several revisions of hyper-parameters**. Thus, this code-base is an intial step to manage the experiments in a systematic way and track multiple results with ample amount of visualization. :muscle:
