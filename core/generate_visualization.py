@@ -28,6 +28,6 @@ def execute(args):
     #sess = tf.Session()
     #tf.train.write_graph(sess.graph_def, project_path + "/debug",'model.pbtxt')
     #netron.start(project_path+"/debug/model.pbtxt")
-    tflite_path = project_path + "/result/model_" + str(args.model) + \
-                "_" + str(args.param) + "_" + args.dataset
-    netron.start(tflite_path+"/model_tflite.tflite")
+    #tflite_path = project_path + "/result/model_" + str(args.model) + \
+    #            "_" + str(args.param) + "_" + args.dataset
+    #netron.start(tflite_path+"/model_tflite.tflite")

@@ -5,7 +5,8 @@ Used tensorflow TFRecords for datapipeline
 
 import wget
 import tarfile
-import cPickle
+import six
+from six.moves import cPickle as pickle
 import tensorflow as tf
 import numpy as np
 import cv2
@@ -39,7 +40,7 @@ class CIFAR_10:
         for i in range(1,6):
             filename = dataset_path + "/raw/" + raw_folder+"/data_batch_"+str(i)
             f = open(filename, 'rb')
-            dict = cPickle.load(f)
+            dict = pickle.load(f)
             images = dict['data']
             images = np.reshape(images, (10000, 3, 32, 32))
             labels = dict['labels']

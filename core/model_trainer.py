@@ -23,22 +23,13 @@ def get_hyper_parameters(version, project_path):
     param_dict = hp_obj.get_params()
     return param_dict
 
-"""def get_data_provider(dataset, project_path, param_dict):
-    data_provider_module_path = "dataset." + dataset + ".data_provider"
-    data_provider_module = importlib.import_module(data_provider_module_path)
-    dp_obj = data_provider_module.get_obj(project_path)
-    img_batch, label_batch = dp_obj.data_provider(param_dict)
-    return img_batch, label_batch"""
-
 def get_data_provider(dataset, project_path, param_dict):
     data_provider_module_path = "dataset." + dataset + ".data_provider"
     data_provider_module = importlib.import_module(data_provider_module_path)
     dp_obj = data_provider_module.get_obj(project_path)
-    with tf.name_scope('input'):
-        img_batch = tf.placeholder(tf.float32, [None, 28, 28, 1])
-    with tf.name_scope('output'):
-        label_batch = tf.placeholder(tf.int64, [None, 10])
-    return img_batch, label_batch, dp_obj
+    dp_obj.set_train_batch(param_dict['BATCH_SIZE'])
+    iter = dp_obj.get_input_output()
+    return iter[0], iter[1], dp_obj
 
 def get_model(version, inputs, param_dict):
     model_module_path = "architecture.version" + str(version) + ".model"
@@ -80,7 +71,6 @@ def execute(args):
     # Define the data provider module
     img_batch, label_batch, dp = get_data_provider(args.dataset,
                                                        project_path, param_dict)
-    dp.set_batch(param_dict['BATCH_SIZE'])
     # Construct a model to be trained
     model = get_model(args.model, img_batch, param_dict)
     # Create a checkpoint mechanism #TODO: Will be moved to logger
@@ -116,23 +106,18 @@ def execute(args):
             writer.add_graph(sess.graph)
 
         for nr_epochs in range(param_dict['NUM_EPOCHS']):
-            for i in range(10):
-                img_batch_data, label_batch_data = dp.next()
-                feed_dict = {img_batch: img_batch_data,
-                             label_batch: label_batch_data}
+            dp.set_for_train(sess)
+            for i in range(dp.get_nr_train_batch()):
                 _, out, loss, accu, summary = sess.run(
-                                        [gd_opt_op,output_probability,loss_op,
-                                         accuracy_op, summary_op],
-                                        feed_dict = feed_dict)
-                train_writer.add_summary(summary, nr_epochs*10 + i)
-
-                img_validation_data, label_validation_data = dp.validation()
-                feed_dict = {img_batch: img_validation_data,
-                             label_batch: label_validation_data}
-                summary = sess.run(summary_op, feed_dict = feed_dict)
-                validation_writer.add_summary(summary, nr_epochs*10 + i)
+                                    [gd_opt_op, output_probability, loss_op,
+                                     accuracy_op, summary_op])
+                train_writer.add_summary(summary,
+                                          nr_epochs*dp.get_nr_train_batch() + i)
                 log_list = {'loss': loss, 'accuracy': accu}
                 logger.batch_logger(log_list, i)
+            dp.set_for_validation(sess)
+            summary = sess.run(summary_op)
+            validation_writer.add_summary(summary, nr_epochs)
             logger.epoch_logger(nr_epochs)
             save_path = saver.save(sess, chk_name)
         train_writer.close()

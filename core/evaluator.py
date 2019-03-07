@@ -25,7 +25,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 from scipy.misc import imread, imresize
-from imagenet_classes import class_names
+#from imagenet_classes import class_names
 
 class TensorBoard:
     def __init__(self, dir_path):
@@ -103,7 +103,7 @@ def create_model(args, project_path):
     graph_def_file = "/path/to/Downloads/mobilenet_v1_1.0_224/frozen_graph.pb"
     input_arrays = [input_node_names]
     output_arrays = [output_node_names]
-    converter = tf.contrib.lite.TFLiteConverter.from_frozen_graph( out_path +
+    converter = tf.contrib.lite.TFLiteConverter.from_frozen_graph( out_path + \
                                     "/model_pb.pb", input_arrays, output_arrays)
     tflite_model = converter.convert()
     open(out_path + "/model_tflite.tflite", "wb").write(tflite_model)
@@ -118,7 +118,7 @@ class evaluation_on_input:
                                args.dataset, self.project_path, self.param_dict)
         self.model = get_model(args.model, self.img_batch, self.param_dict)
         self.args = args
-        logs_path = project_path + "/checkpoint/checkpoint_" +str(args.model)+ \
+        logs_path = project_path + "/checkpoint/checkpoint_" +str(args.model)+\
                     "_" + str(args.param) + "_" + args.dataset
         chk_name = os.path.join(logs_path, 'model.ckpt')
         self.saver = tf.train.Saver()
@@ -184,7 +184,7 @@ def plot_activation(feature, path):
 
 def evaluation_on_sample(e, args, project_path, all=True):
     sample_path = project_path + "/dataset/" + args.dataset + "/sample/"
-    write_path = project_path + "/visualization/vis" + str(args.model) + "_" +
+    write_path = project_path + "/visualization/vis" + str(args.model) + "_" + \
                                             str(args.param) + "_" + args.dataset
     if not os.path.isdir(write_path):
         os.mkdir(write_path)

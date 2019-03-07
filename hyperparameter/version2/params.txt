@@ -4,7 +4,7 @@
 "BATCH_SIZE": 10,
 "learning_rate": 0.0005,
 "PREFETCH_BUFFER": 1024,
-"resolution_multiplier": 1,
-"width_multiplier": 1,
-"depth_multiplier": 1
+"intializer": 0,
+"trainable": true,
+"dropout": 0.5
 }

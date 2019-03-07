@@ -4,7 +4,8 @@ Dataset script for IMAGENET
 
 import wget
 import tarfile
-import cPickle
+import six
+from six.moves import cPickle as pickle
 import tensorflow as tf
 import numpy as np
 import cv2

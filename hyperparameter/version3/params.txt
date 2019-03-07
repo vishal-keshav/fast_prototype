@@ -1,1 +1,10 @@
-{"learning_rate": 0.00027739603631989426, "BATCH_SIZE": 81, "NUM_EPOCHS": 2}
+{
+"NUM_EPOCHS": 3,
+"GPU_ENABLED": false,
+"BATCH_SIZE": 10,
+"learning_rate": 0.0005,
+"PREFETCH_BUFFER": 1024,
+"resolution_multiplier": 1,
+"width_multiplier": 1,
+"depth_multiplier": 1
+}

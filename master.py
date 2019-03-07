@@ -22,11 +22,11 @@ def argument_parser():
     parser.add_argument('--phase', default='all', type=str, help='Phase')
     parser.add_argument('--dataset', default='MNIST', type=str,
                         help='Dataset')
-    parser.add_argument('--download', default=False, type=bool,
+    parser.add_argument('--download', default=True, type=bool,
                         help='Download dataset?')
-    parser.add_argument('--preprocess', default=False, type=bool,
+    parser.add_argument('--preprocess', default=True, type=bool,
                         help='Preprocess dataset?')
-    parser.add_argument('--create_model', default=False, type=bool,
+    parser.add_argument('--create_model', default=True, type=bool,
                         help='Create Model from trained data?')
     parser.add_argument('--view', default=False, type=bool,
                         help='View Sample dataset?')
