@@ -5,15 +5,6 @@ Data provider for CIFAR-10
 import tensorflow as tf
 import cv2
 
-"""
-get_input_output (returns the iterator placeholders for input and labels)
-set_train_batch (sets the train batch and computes the nr_batch)
-get_nr_train_batch (returns the nr_batch computed above)
-set_for_train (instructs the pipeline to use train data)
-set_for_validation (instructs the pipeline to use validation/test data)
-"""
-
-
 class data_provider_CIFAR_10:
     def __init__(self, absolute_path):
         self.dataset_name = "CIFAR-10"

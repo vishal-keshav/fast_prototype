@@ -80,7 +80,6 @@ class data_provider_IMAGENET:
     def __init__(self, absolute_path):
         self.dataset_name = "IMAGENET"
         self.absolute_path = absolute_path
-        self.img_size = 224
 
     def train_data_pipeline(self):
         self.decoder = slim.tfexample_decoder.TFExampleDecoder(keys_to_features,
@@ -88,21 +87,26 @@ class data_provider_IMAGENET:
         self.reader = tf.TFRecordReader
         tfrecord_file_path = self.absolute_path+"/dataset/" +self.dataset_name +
                             "/pre-processed/tfrecords"
-        file_pattern = os.path.join(self.dataset_dir, _FILE_PATTERN % "train")
-        self.slim_dataset = slim.dataset.Dataset(data_sources = file_pattern,
+        file_pattern_t = os.path.join(self.dataset_dir, _FILE_PATTERN % "train")
+        file_pattern_v = os.path.join(self.dataset_dir, _FILE_PATTERN % "valid")
+        self.train_dataset = slim.dataset.Dataset(data_sources = file_pattern_t,
                             reader = self.reader, decoder=self.decoder,
                             num_samples = _SPLITS_TO_SIZES['train'],
                             items_to_descriptions = _ITEMS_TO_DESCRIPTIONS,
                             num_classes = _NUM_CLASSES, labels_to_names = None)
-        dp = slim.dataset_data_provider.DatasetDataProvider(self.slim_dataset,
+        self.validation_dataset=slim.dataset.Dataset(data_sources=file_pattern_v,
+                            reader = self.reader, decoder=self.decoder,
+                            num_samples = _SPLITS_TO_SIZES['validation'],
+                            items_to_descriptions = _ITEMS_TO_DESCRIPTIONS,
+                            num_classes = _NUM_CLASSES, labels_to_names = None)
+        """dp = slim.dataset_data_provider.DatasetDataProvider(self.slim_dataset,
                 num_readers = 1, common_queue_capacity = 20*self.batch_size,
                 common_queue_min = 10*self.batch_size)
         [self.unpreprocessed_image, self.label] = dp.get(['image', 'label'])
         self.processed_image =preprocessing_for_train(self.unpreprocessed_image,
-                                self.img_size, self.img_size)
+                                self.img_size, self.img_size)"""
+
         return
-
-
 
 
     # For imagenet training, this function call in essential
@@ -115,14 +119,6 @@ class data_provider_IMAGENET:
             img, label = sess.run([self.img_batch, self.label_batch])
         return [img, label]
 
-    def view(self, batch_data):
-        img = batch_data[0]
-        label = batch_data[1]
-        print(label[0])
-        print(img[0].shape)
-        img_path = self.absolute_path + "/debug/image.jpg"
-        cv2.imwrite(img_path, img[0], [int(cv2.IMWRITE_JPEG_QUALITY), 100])
-
     def data_provider(self):
         # This is where we scale the image in [-1, 1] range
         #self.image = tf.image.per_image_standardization(self.processed_image)
@@ -134,13 +130,45 @@ class data_provider_IMAGENET:
                                   capacity=5*self.batch_size)
         return images, labels
 
-    def view(self, batch_data):
-        img = batch_data[0]
-        label = batch_data[1]
-        print(label[0])
-        print(img[0].shape)
-        img_path = self.absolute_path + "/debug/image.jpg"
-        cv2.imwrite(img_path, img[0], [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+    def _initialize_initializer(self):
+        train_file_name = self.absolute_path + "/dataset/"+self.dataset_name + \
+                                         "/pre-processed/" + "dataset.tfrecords"
+        val_file_name = self.absolute_path + "/dataset/"+self.dataset_name + \
+                                    "/pre-processed/" + "dataset_val.tfrecords"
+        self.train_dataset = self._get_tfrecord_dataset_train(train_file_name)
+        self.validation_dataset =self._get_tfrecord_dataset_valid(val_file_name)
+        self.iterator = tf.data.Iterator.from_structure(
+               self.train_dataset.output_types,self.train_dataset.output_shapes)
+        self.next_element = self.iterator.get_next()
+        self.training_init_op=self.iterator.make_initializer(self.train_dataset)
+        self.validation_init_op = self.iterator.make_initializer(
+                                                self.validation_dataset)
+
+    def get_input_output(self):
+        self._initialize_initializer()
+        return self.next_element
+
+    def get_dataset_shape(self):
+        input_shape = np.array([None, 224, 224, 3])
+        output_shape = np.array([None, 1001])
+        return input_shape, output_shape
+
+    def set_train_batch(self, batch_size):
+        self.batch_size = batch_size
+        self.train_size = _SPLITS_TO_SIZES['train']
+        self.nr_batch = int(self.train_size/self.batch_size)
+
+    def get_nr_train_batch(self):
+        return self.nr_batch
+
+    def set_for_train(self, sess):
+        sess.run(self.training_init_op)
+
+    def set_for_validation(self, sess):
+        sess.run(self.validation_init_op)
+
+    def set_for_testing(self, sess):
+        sess.run(self.validation_init_op)
 
 def get_obj(absolute_path):
     obj = data_provider_IMAGENET(absolute_path)
