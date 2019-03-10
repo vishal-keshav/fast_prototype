@@ -6,10 +6,9 @@ MobileNet Architecture.
 """
 
 class MobileNet:
-    def __init__(self, args, weights = None, trainable = True):
+    def __init__(self, weights = None, trainable = True):
         self.layers = []
         self.network = {}
-        self.args = args
         # We need train/test mode since we have batch normalization
         # Otherwise, we have share the parameters between two constructed nets
         self.is_train = tf.placeholder(tf.bool, shape = ())
@@ -196,19 +195,91 @@ def variable_summaries(var):
     tf.summary.scalar('min', tf.reduce_min(var))
     tf.summary.histogram('histogram', var)
 
-def get_mobilenet_weights():
-    weights = 0
-    return weights
 
 """
 Model interface for creating and returning network with initializer specified
 """
+
+def create_var_map_dict():
+    """
+    Doing the transfer learning
+    The data variable used by this model are as follow:
+    For i == 1, layer_<i>/conv_W:0,
+                (MobilenetV1/Conv2d_<i-1>/weights:0)
+                layer_<i>/conv_bn/gamma:0,
+                (MobilenetV1/Conv2d_<i-1>/BatchNorm/gamma:0)
+                layer_<i>/conv_bn/beta:0
+                (MobilenetV1/Conv2d_<i-1>/BatchNorm/beta:0)
+    for i == [2, 14], layer_<i>/depth_conv_W:0,
+                      (MobilenetV1/Conv2d_<i-1>_depthwise/depthwise_weights:0)
+                      layer_<i>/depth_conv_bn/gamma:0,
+                      (MobilenetV1/Conv2d_<i-1>_depthwise/BatchNorm/gamma:0)
+                      layer_<i>/depth_conv_bn/beta:0,
+                      (MobilenetV1/Conv2d_<i-1>_depthwise/BatchNorm/beta:0)
+                      layer_<i>/point_conv_W:0,
+                      (MobilenetV1/Conv2d_<i-1>_pointwise/weights:0)
+                      layer_<i>/point_conv_bn/gamma:0,
+                      (MobilenetV1/Conv2d_<i-1>_pointwise/BatchNorm/gamma:0)
+                      layer_<i>/point_conv_bn/beta:0,
+                      (MobilenetV1/Conv2d_<i-1>_pointwise/BatchNorm/beta:0)
+    for last layer "conv_out", conv_out/conv_W:0,
+                               (MobilenetV1/Logits/Conv2d_1c_1x1/weights:0)
+                               conv_out/conv_b:0
+                               (MobilenetV1/Logits/Conv2d_1c_1x1/biases:0)
+
+    TOTAL DIMS OF TRAINABLE VARIABLES 4233001
+    """
+    var_dict = {}
+    var_dict['MobilenetV1/Conv2d_0/weights:0'] = 'layer_1/conv_W'
+    var_dict['MobilenetV1/Conv2d_0/BatchNorm/gamma:0']='layer_1/conv_bn/gamma'
+    var_dict['MobilenetV1/Conv2d_0/BatchNorm/beta:0']='layer_1/conv_bn/beta'
+    for i in range(2,15):
+        l1 = 'layer_' + str(i)
+        l2 = 'MobilenetV1/Conv2d_'+ str(i-1)
+        var_dict[l2+ '_depthwise/depthwise_weights:0'] = l1+ '/depth_conv_W'
+        var_dict[l2+ '_depthwise/BatchNorm/gamma:0']=l1+'/depth_conv_bn/gamma'
+        var_dict[l2+'_depthwise/BatchNorm/beta:0']=l1 + '/depth_conv_bn/beta'
+        var_dict[l2+ '_pointwise/weights:0'] = l1+ '/point_conv_W'
+        var_dict[l2+ '_pointwise/BatchNorm/gamma:0']=l1+'/point_conv_bn/gamma'
+        var_dict[l2+'_pointwise/BatchNorm/beta:0']=l1 + '/point_conv_bn/beta'
+    var_dict['MobilenetV1/Logits/Conv2d_1c_1x1/weights:0'] = 'conv_out/conv_W'
+    var_dict['MobilenetV1/Logits/Conv2d_1c_1x1/biases:0'] = 'conv_out/conv_b'
+    return var_dict
+
+def create_variable_dict_from_session_graph(sess, var_name_map):
+    var_dict = {}
+    for variable in tf.trainable_variables():
+        var_dict[var_name_map[variable.name]] = variable.eval(sess)
+    return var_dict
+
+def get_mobilenet_weights():
+    dir_name = 'mobilenet_v1_1.0_224'
+    ckpt_name = dir_name + '/mobilenet_v1_1.0_224.ckpt'
+    g = tf.Graph()
+    with g.as_default() as g_temp:
+        with tf.Session(graph = g_temp) as sess:
+            if tf.train.checkpoint_exists(ckpt_name):
+                print("checkpoint found, restoring graph")
+                new_saver = tf.train.import_meta_graph(ckpt_name + '.meta',
+                                                                 clear_devices=True)
+                new_saver.restore(sess, dir_name + '/mobilenet_v1_1.0_224.ckpt')
+                var_map = create_var_map_dict()
+                weight_dict = create_variable_dict_from_session_graph(sess, var_map)
+            else:
+                print("Not able to restore checkpoint")
+                weight_dict = None
+    return weight_dict
+
 def create_model(img, args):
-    net = MobileNet(args)
-    net.build_model(img)
+    mobilenet_weights = get_mobilenet_weights()
+    #mobilenet_weights = None
+    net = MobileNet(mobilenet_weights)
+    net.build_model(img, False)
     return {'feature_in': img,
             'feature_logits': net.get_logits() ,
             'feature_out': net.get_feature()}
+
+#------------------------Testing------------------------#
 
 def profile_nodes(graph, verbose = True):
     ops_list = graph.get_operations()
@@ -240,55 +311,13 @@ def main():
             'depth_multiplier': 1}
     net_features = create_model(img, args)
     print("MobileNet network built")
-    # Here only, we will test the the model accuracy by first
-    # transferring the weights.
-    """
-    Doing the transfer learning
-    The data variable used by this model are as follow:
-    For i == 1, layer_<i>/conv_W:0,
-                (MobilenetV1/Conv2d_<i-1>/weights:0)
-                layer_<i>/conv_bn/gamma:0,
-                (MobilenetV1/Conv2d_<i-1>/BatchNorm/gamma:0)
-                layer_<i>/conv_bn/beta:0
-                (MobilenetV1/Conv2d_<i>/BatchNorm/beta:0)
-    for i == [2, 14], layer_<i>/depth_conv_W:0,
-                      (MobilenetV1/Conv2d_<i-1>_depthwise/depthwise_weights:0)
-                      layer_<i>/depth_conv_bn/gamma:0,
-                      (MobilenetV1/Conv2d_<i-1>_depthwise/BatchNorm/gamma:0)
-                      layer_<i>/depth_conv_bn/beta:0,
-                      (MobilenetV1/Conv2d_<i-1>_depthwise/BatchNorm/beta:0)
-                      layer_<i>/point_conv_W:0,
-                      (MobilenetV1/Conv2d_<i-1>_pointwise/weights:0)
-                      layer_<i>/point_conv_bn/gamma:0,
-                      (MobilenetV1/Conv2d_<i-1>_pointwise/BatchNorm/gamma:0)
-                      layer_<i>/point_conv_bn/beta:0,
-                      (MobilenetV1/Conv2d_<i-1>_pointwise/BatchNorm/beta:0)
-    for last layer "conv_out", conv_out/conv_W:0,
-                               (MobilenetV1/Logits/Conv2d_1c_1x1/weights:0)
-                               conv_out/conv_b:0
-                               (MobilenetV1/Logits/Conv2d_1c_1x1/biases:0)
-
-    TOTAL DIMS OF TRAINABLE VARIABLES 4233001
-    """
+    # Here only, we will test the the model accuracy on transferred weights
     """with tf.Session() as sess:
         writer = tf.summary.FileWriter('logs', sess.graph)
         writer.close()"""
 
     with tf.Session() as sess:
         profile_nodes(sess.graph)
-
-    """dir_name = 'mobilenet_v1_1.0_224'
-    ckpt_name = dir_name + '/mobilenet_v1_1.0_224.ckpt'
-    tf.reset_default_graph()
-    with tf.Session() as sess:
-        if tf.train.checkpoint_exists(ckpt_name):
-            print("checkpoint found, restoring graph")
-            new_saver = tf.train.import_meta_graph(ckpt_name + '.meta', clear_devices=True)
-            new_saver.restore(sess, dir_name + '/' + 'mobilenet_v1_1.0_224.ckpt')
-        else:
-            print("Not able to restore checkpoint")
-        profile_nodes(sess.graph)"""
-
 
 if __name__ == "__main__":
     main()
