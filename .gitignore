@@ -10,6 +10,7 @@ dataset/CIFAR-10/raw
 dataset/CIFAR-10/pre-processed
 dataset/IMAGENET/raw
 dataset/IMAGENET/pre-processed
+architecture/version3/mobilenet_v1_1.0_224
 checkpoint/checkpoint_*
 debug/model.pbtxt
 debug/summary_*

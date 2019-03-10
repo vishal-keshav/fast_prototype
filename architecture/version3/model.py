@@ -165,9 +165,9 @@ class MobileNet:
         nr_depth = input.get_shape().as_list()[-1]
         kernel = self.get_var(shape = [kernel_shape[0], kernel_shape[1],
                                   nr_depth,out_channel], name = name + "_W")
-        biases = self.get_var(shape=[out_channel], name= name + "_b")
+        #biases = self.get_var(shape=[out_channel], name= name + "_b")
         conv = tf.nn.conv2d(input, kernel, strides, padding='SAME')
-        conv = tf.nn.bias_add(conv, biases)
+        #conv = tf.nn.bias_add(conv, biases)
         batch = tf.layers.batch_normalization(conv, training=self.is_train,
                                                               name =name+ '_bn')
         activation = tf.nn.relu6(batch)
@@ -176,10 +176,10 @@ class MobileNet:
     def depth_conv(self,input, kernel_shape, name):
         nr_depth = input.get_shape().as_list()[-1]
         dw_kernel = self.get_var(shape=[3, 3, nr_depth, 1],name=name + '_W')
-        dw_biases = self.get_var(shape=[nr_depth], name = name + '_b')
+        #dw_biases = self.get_var(shape=[nr_depth], name = name + '_b')
         conv_dw = tf.nn.depthwise_conv2d(input, dw_kernel, strides = [1,1,1,1],
                                                                padding = 'SAME')
-        conv_dw = tf.nn.bias_add(conv_dw, dw_biases)
+        #conv_dw = tf.nn.bias_add(conv_dw, dw_biases)
         batch=tf.layers.batch_normalization(conv_dw,training=self.is_train,
                                                               name =name+ '_bn')
         activation = tf.nn.relu6(batch)
@@ -245,26 +245,50 @@ def main():
     """
     Doing the transfer learning
     The data variable used by this model are as follow:
-    For i == 1, layer_i/conv_W:0,
-                layer_i/conv_b:0,
-                layer_i/conv_bn/gamma:0,
-                layer_i/conv_bn/beta:0
-    for i == [2, 14], layer_i/depth_conv_W:0,
-                      layer_i/depth_conv_b:0,
-                      layer_i/depth_conv_bn/gamma:0,
-                      layer_i/depth_conv_bn/beta:0,
-                      layer_i/point_conv_W:0,
-                      layer_i/point_conv_b:0,
-                      layer_i/point_conv_bn/gamma:0,
-                      layer_i/point_conv_bn/beta:0,
-    for last layer "conv_out", conv_out/conv_W:0
+    For i == 1, layer_<i>/conv_W:0,
+                (MobilenetV1/Conv2d_<i-1>/weights:0)
+                layer_<i>/conv_bn/gamma:0,
+                (MobilenetV1/Conv2d_<i-1>/BatchNorm/gamma:0)
+                layer_<i>/conv_bn/beta:0
+                (MobilenetV1/Conv2d_<i>/BatchNorm/beta:0)
+    for i == [2, 14], layer_<i>/depth_conv_W:0,
+                      (MobilenetV1/Conv2d_<i-1>_depthwise/depthwise_weights:0)
+                      layer_<i>/depth_conv_bn/gamma:0,
+                      (MobilenetV1/Conv2d_<i-1>_depthwise/BatchNorm/gamma:0)
+                      layer_<i>/depth_conv_bn/beta:0,
+                      (MobilenetV1/Conv2d_<i-1>_depthwise/BatchNorm/beta:0)
+                      layer_<i>/point_conv_W:0,
+                      (MobilenetV1/Conv2d_<i-1>_pointwise/weights:0)
+                      layer_<i>/point_conv_bn/gamma:0,
+                      (MobilenetV1/Conv2d_<i-1>_pointwise/BatchNorm/gamma:0)
+                      layer_<i>/point_conv_bn/beta:0,
+                      (MobilenetV1/Conv2d_<i-1>_pointwise/BatchNorm/beta:0)
+    for last layer "conv_out", conv_out/conv_W:0,
+                               (MobilenetV1/Logits/Conv2d_1c_1x1/weights:0)
                                conv_out/conv_b:0
+                               (MobilenetV1/Logits/Conv2d_1c_1x1/biases:0)
+
+    TOTAL DIMS OF TRAINABLE VARIABLES 4233001
     """
     """with tf.Session() as sess:
         writer = tf.summary.FileWriter('logs', sess.graph)
         writer.close()"""
+
     with tf.Session() as sess:
         profile_nodes(sess.graph)
+
+    """dir_name = 'mobilenet_v1_1.0_224'
+    ckpt_name = dir_name + '/mobilenet_v1_1.0_224.ckpt'
+    tf.reset_default_graph()
+    with tf.Session() as sess:
+        if tf.train.checkpoint_exists(ckpt_name):
+            print("checkpoint found, restoring graph")
+            new_saver = tf.train.import_meta_graph(ckpt_name + '.meta', clear_devices=True)
+            new_saver.restore(sess, dir_name + '/' + 'mobilenet_v1_1.0_224.ckpt')
+        else:
+            print("Not able to restore checkpoint")
+        profile_nodes(sess.graph)"""
+
 
 if __name__ == "__main__":
     main()
