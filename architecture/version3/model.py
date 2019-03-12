@@ -154,6 +154,8 @@ class MobileNet:
             var = tf.get_variable(initializer=tf.constant(self.data_dict[name]),
                     dtype = tf.float32, trainable = self.trainable, name = name)
         else:
+            print("******************************************")
+            print(name)
             var = tf.get_variable(name = name, shape = shape, dtype =tf.float32,
                         initializer=tf.truncated_normal_initializer(0.0, 0.001),
                         trainable = self.trainable)
@@ -276,8 +278,9 @@ def create_model(img, args):
     net = MobileNet(mobilenet_weights)
     net.build_model(img, False)
     return {'feature_in': img,
-            'feature_logits': net.get_logits() ,
-            'feature_out': net.get_feature()}
+            'feature_logits': net.get_logits(),
+            'feature_out': net.get_feature(),
+            'train_placeholder': net.is_train}
 
 #------------------------Testing------------------------#
 
@@ -305,6 +308,8 @@ def profile_nodes(graph, verbose = True):
         pass
 
 def main():
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
     img = tf.placeholder(tf.float32, shape = (None, 224, 224, 3))
     args = {'resolution_multiplier': 1,
             'width_multiplier': 1,
@@ -315,9 +320,19 @@ def main():
     """with tf.Session() as sess:
         writer = tf.summary.FileWriter('logs', sess.graph)
         writer.close()"""
-
-    with tf.Session() as sess:
-        profile_nodes(sess.graph)
+    from imagenet_classes import class_names
+    from scipy.misc import imread, imresize
+    with tf.Session(config=config) as sess:
+        #profile_nodes(sess.graph)
+        sess.run(tf.initializers.global_variables())
+        file = 'file1.jpg'
+        input = imread(file, mode='RGB')
+        input = imresize(input, (224, 224)).reshape(1, 224, 224, 3)
+        feed_dict = {img: input, net_features['train_placeholder']: False}
+        op_prob = sess.run(net_features['feature_out'], feed_dict = feed_dict)
+        preds = (np.argsort(op_prob[0])[::-1])[0:5]
+        for p in preds:
+            print(class_names[p], op_prob[0][p])
 
 if __name__ == "__main__":
     main()
