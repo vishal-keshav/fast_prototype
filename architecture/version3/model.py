@@ -36,7 +36,7 @@ class MobileNet:
 
         with tf.name_scope('layer_1') as scope:
             self.network['layer_1_out'] = self.conv(input, kernel_shape = [3,3],
-                      out_channel=32, strides = [1,1,1,1], name = scope+"conv")
+                      out_channel=32, strides = [1,2,2,1], name = scope+"conv")
 
         with tf.name_scope('layer_2') as scope:
             self.network['layer_2_out_1'] = self.depth_conv(
@@ -154,8 +154,6 @@ class MobileNet:
             var = tf.get_variable(initializer=tf.constant(self.data_dict[name]),
                     dtype = tf.float32, trainable = self.trainable, name = name)
         else:
-            print("******************************************")
-            print(name)
             var = tf.get_variable(name = name, shape = shape, dtype =tf.float32,
                         initializer=tf.truncated_normal_initializer(0.0, 0.001),
                         trainable = self.trainable)
@@ -325,9 +323,10 @@ def main():
     with tf.Session(config=config) as sess:
         #profile_nodes(sess.graph)
         sess.run(tf.initializers.global_variables())
-        file = 'file1.jpg'
+        file = 'file2.jpg'
         input = imread(file, mode='RGB')
-        input = imresize(input, (224, 224)).reshape(1, 224, 224, 3)
+        input = imresize(input, (224, 224)).reshape(1, 224, 224, 3)/225.0
+        print(input)
         feed_dict = {img: input, net_features['train_placeholder']: False}
         op_prob = sess.run(net_features['feature_out'], feed_dict = feed_dict)
         preds = (np.argsort(op_prob[0])[::-1])[0:5]
