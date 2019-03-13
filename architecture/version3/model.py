@@ -1,6 +1,12 @@
 import tensorflow as tf
 import numpy as np
 
+import os
+import shutil
+import wget
+import tarfile
+
+
 """
 MobileNet Architecture.
 """
@@ -252,8 +258,18 @@ def create_variable_dict_from_session_graph(sess, var_name_map):
         var_dict[var_name_map[variable.name]] = variable.eval(sess)
     return var_dict
 
-def get_mobilenet_weights():
-    dir_name = 'mobilenet_v1_1.0_224'
+def get_mobilenet_weights_from_checkpoint():
+    url = 'http://download.tensorflow.org/models/mobilenet_v1_2018_08_02/' + \
+            'mobilenet_v1_1.0_224.tgz'
+    project_path = os.getcwd()
+    mobilenet_weight_path = project_path + "/architecture/version3/"
+    print("Downloading mobilenet checkpoints")
+    filename = wget.download(url, mobilenet_weight_path)
+    print("Downloaded " + filename)
+    tar = tarfile.open(filename)
+    tar.extractall(path = mobilenet_weight_path + 'mobilenet_v1_1.0_224')
+    tar.close()
+    dir_name = mobilenet_weight_path + 'mobilenet_v1_1.0_224'
     ckpt_name = dir_name + '/mobilenet_v1_1.0_224.ckpt'
     g = tf.Graph()
     with g.as_default() as g_temp:
@@ -261,13 +277,25 @@ def get_mobilenet_weights():
             if tf.train.checkpoint_exists(ckpt_name):
                 print("checkpoint found, restoring graph")
                 new_saver = tf.train.import_meta_graph(ckpt_name + '.meta',
-                                                                 clear_devices=True)
+                                                             clear_devices=True)
                 new_saver.restore(sess, dir_name + '/mobilenet_v1_1.0_224.ckpt')
                 var_map = create_var_map_dict()
-                weight_dict = create_variable_dict_from_session_graph(sess, var_map)
+                weight_dict=create_variable_dict_from_session_graph(sess,var_map)
             else:
                 print("Not able to restore checkpoint")
                 weight_dict = None
+    print("Creating npz for mobilenet weights")
+    np.savez(mobilenet_weight_path + 'mobilenet_weights.npz', **weight_dict)
+    print("Cleanup checkpoints")
+    os.unlink(mobilenet_weight_path + 'mobilenet_v1_1.0_224.tgz')
+    shutil.rmtree(mobilenet_weight_path + 'mobilenet_v1_1.0_224')
+
+def get_mobilenet_weights():
+    project_path = os.getcwd()
+    mobilenet_weight_path = project_path + "/architecture/version3/"
+    if not os.path.isfile(mobilenet_weight_path + "mobilenet_weights.npz"):
+        get_mobilenet_weights_from_checkpoint()
+    weight_dict = np.load(mobilenet_weight_path + "mobilenet_weights.npz")
     return weight_dict
 
 def create_model(img, args):
@@ -306,6 +334,8 @@ def profile_nodes(graph, verbose = True):
         pass
 
 def main():
+    project_path = os.getcwd()
+    mobilenet_weight_path = project_path + "/architecture/version3/"
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     img = tf.placeholder(tf.float32, shape = (None, 224, 224, 3))
@@ -323,7 +353,7 @@ def main():
     with tf.Session(config=config) as sess:
         #profile_nodes(sess.graph)
         sess.run(tf.initializers.global_variables())
-        file = 'file2.jpg'
+        file = mobilenet_weight_path + 'file2.jpg'
         input = imread(file, mode='RGB')
         input = imresize(input, (224, 224)).reshape(1, 224, 224, 3)/225.0
         print(input)
