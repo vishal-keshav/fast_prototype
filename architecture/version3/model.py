@@ -16,7 +16,8 @@ class MobileNet:
         self.network = {}
         # We need train/test mode since we have batch normalization
         # Otherwise, we have share the parameters between two constructed nets
-        self.is_train = tf.placeholder(tf.bool, shape = ())
+        #self.is_train = tf.placeholder(tf.bool, shape = ())
+        self.is_train = False
         self.nr_classes = 1001
         if weights is not None:
             self.data_dict = weights
@@ -422,7 +423,8 @@ def main():
         input = imresize(input, (224, 224)).reshape(1, 224, 224, 3).astype(float)
         input/=127.5
         input-=1.
-        feed_dict = {img: input, net_features['train_placeholder']: False}
+        #feed_dict = {img: input, net_features['train_placeholder']: False}
+        feed_dict = {img: input}
         op_prob = sess.run(net_features['feature_out'], feed_dict = feed_dict)
         preds = (np.argsort(op_prob[0])[::-1])[0:5]
         for p in preds:
