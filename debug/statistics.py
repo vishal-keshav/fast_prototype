@@ -20,6 +20,7 @@ class distribution_plotter:
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         plt.show()
+
 #---------Test---------
 
 def main():
