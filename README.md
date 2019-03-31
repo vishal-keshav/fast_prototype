@@ -4,6 +4,8 @@ NOTICE: I am upgrading this framework to tensorflow 2.0 and adding some more
         Mobilenetv1 training with imagenet data will be reported soon.
 
         If some feature is not working, kindly let me know.
+        An advanced version of this framework is available. You can request that
+        by writing a mail to "vishal.keshav.1993@gmail.com"
 ```
 
 # A more systematic approach to prototype research ideas
