@@ -17,6 +17,7 @@ import importlib
 import tensorflow as tf
 import numpy as np
 
+#---------------------------Utility Functions-----------------------------------
 def get_hyper_parameters(version, project_path):
     import hyperparameter.hyperparameter as hp
     hp_obj = hp.HyperParameters(version, project_path)
@@ -27,14 +28,12 @@ def get_data_provider(dataset, project_path, param_dict):
     data_provider_module_path = "dataset." + dataset + ".data_provider"
     data_provider_module = importlib.import_module(data_provider_module_path)
     dp_obj = data_provider_module.get_obj(project_path)
-    dp_obj.set_train_batch(param_dict['BATCH_SIZE'])
-    iter = dp_obj.get_input_output()
-    return iter[0], iter[1], dp_obj
+    return dp_obj
 
-def get_model(version, inputs, param_dict):
+def get_model(version, inputs, param_dict, is_train = False, pretrained =False):
     model_module_path = "architecture.version" + str(version) + ".model"
     model_module = importlib.import_module(model_module_path)
-    model = model_module.create_model(inputs, param_dict)
+    model = model_module.create_model(inputs, is_train, pretrained)
     return model
 
 def optimisation(label_batch, logits, param_dict):
@@ -44,8 +43,10 @@ def optimisation(label_batch, logits, param_dict):
     tf.summary.scalar('loss', loss_op)
     with tf.name_scope('gradient_optimisation'):
         gradient_opt_op = tf.train.AdamOptimizer(param_dict['learning_rate'])
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         gd_opt_op = gradient_opt_op.minimize(loss_op)
-    return loss_op, gd_opt_op
+        gd_opt_op_grp = tf.group([update_ops, gd_opt_op])
+    return loss_op, gd_opt_op_grp
 
 def get_logger(keys, notify):
     import debug.logger as lg
@@ -56,44 +57,59 @@ def accuracy(predictions, labels):
     with tf.name_scope('accuracy'):
         correct_prediction = tf.equal(tf.argmax(predictions, 1),
                                       tf.argmax(labels,1))
-        accuracy = 100*tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        accuracy = 100.0*tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     tf.summary.scalar('accuracy', accuracy)
     return accuracy
+
+def correct_op(predictions, labels):
+    with tf.name_scope('nr_correct'):
+        correct_prediction = tf.equal(tf.argmax(predictions, 1),
+                                      tf.argmax(labels,1))
+        accuracy = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
+        total_predction = tf.shape(predictions)[0]
+    return accuracy, total_predction
 
 def mk_dir(path):
     if not os.path.isdir(path):
         os.mkdir(path)
 
+#-------------------------------------------------------------------------------
+
 def execute(args):
-    # Declare hyper-parameters (param_dict is a dictionary of parameters)
+    tf.random.set_random_seed(47) # Agent 47
     project_path = os.getcwd()
     param_dict = get_hyper_parameters(args.param, project_path)
-    # Define the data provider module
-    img_batch, label_batch, dp = get_data_provider(args.dataset,
-                                                       project_path, param_dict)
-    # Construct a model to be trained
-    model = get_model(args.model, img_batch, param_dict)
+    dp = get_data_provider(args.dataset, project_path, param_dict)
+    train_img, train_label = dp.get_train_dataset(param_dict['BATCH_SIZE'])
+    train_model = get_model(args.model, train_img, param_dict, is_train = True,
+                                                            pretrained = False)
+    valid_img, valid_label = dp.get_validation_dataset(batch_size = 128)
+    validation_model = get_model(args.model, valid_img, param_dict,
+                                            is_train = False,pretrained = False)
+
     # Create a checkpoint mechanism #TODO: Will be moved to logger
     logs_path = project_path + "/checkpoint/checkpoint_" + str(args.model) + \
                 "_" + str(args.param) + "_" + args.dataset
     chk_name = os.path.join(logs_path, 'model.ckpt')
     mk_dir(logs_path)
+
     writer = tf.summary.FileWriter(logs_path)
     saver = tf.train.Saver()
     # Get a logger and notifier
     log_keys = ["loss", "accuracy"]
     logger = get_logger(log_keys, args.notify)
-    # Define optimization procedure
-    logits = model['feature_logits']
-    output_probability = model['feature_out']
-    loss_op, gd_opt_op = optimisation(label_batch, logits, param_dict)
-    # Define accuracy operation
-    accuracy_op = accuracy(output_probability, label_batch)
-    # Merge all summaries
+
+    logits = train_model['feature_logits']
+    output_probability = train_model['feature_out']
+    loss_op, gd_opt_op = optimisation(train_label, logits, param_dict)
+
+    accuracy_op = accuracy(output_probability, train_label)
+    nr_correct, nr_total=correct_op(validation_model['feature_out'],valid_label)
+
     summary_op = tf.summary.merge_all()
     summary_path = project_path + "/debug/summary_" + str(args.model) + \
                 "_" + str(args.param) + "_" + args.dataset
-    # Start a session
+
     with tf.Session() as sess:
         train_writer = tf.summary.FileWriter(summary_path + '/train',sess.graph)
         validation_writer = tf.summary.FileWriter(summary_path + '/validation')
@@ -104,21 +120,43 @@ def execute(args):
         else:
             sess.run(tf.global_variables_initializer())
             writer.add_graph(sess.graph)
+            print("new session will be saved")
 
         for nr_epochs in range(param_dict['NUM_EPOCHS']):
-            dp.set_for_train(sess)
-            for i in range(dp.get_nr_train_batch()):
-                _, out, loss, accu, summary = sess.run(
-                                    [gd_opt_op, output_probability, loss_op,
-                                     accuracy_op, summary_op])
-                train_writer.add_summary(summary,
-                                          nr_epochs*dp.get_nr_train_batch() + i)
-                log_list = {'loss': loss, 'accuracy': accu}
-                logger.batch_logger(log_list, i)
-            dp.set_for_validation(sess)
-            summary = sess.run(summary_op)
-            validation_writer.add_summary(summary, nr_epochs)
-            logger.epoch_logger(nr_epochs)
+            i=0
+            dp.initialize_train(sess)
+            while True:
+                try:
+                    _, loss, accu, summary = sess.run([gd_opt_op, loss_op,
+                                                      accuracy_op, summary_op])
+                    #summary = sess.run(summary_op)
+                    train_writer.add_summary(summary,
+                                          nr_epochs*param_dict['BATCH_SIZE']+i)
+                    i = i+1
+                    print("Loss: " + str(loss) + " Examples processed: " + \
+                                str(param_dict['BATCH_SIZE']*i)+" " + str(accu))
+
+                    #log_list = {'loss': loss, 'accuracy': accu}
+                    #logger.batch_logger(log_list, i)
+                except tf.errors.OutOfRangeError:
+                    print("Epoch " + str(nr_epochs) + " completed")
+                    dp.initialize_validation(sess)
+                    correct_examples = 0
+                    examples = 0
+                    while True:
+                        try:
+                            correct, total = sess.run([nr_correct, nr_total])
+                            correct_examples = correct_examples + correct
+                            examples = examples + total
+                        except tf.errors.OutOfRangeError:
+                            accu_valid = float(correct_examples)/float(examples)
+                            print("Validation accuracy: "+str(100.0*accu_valid))
+                            break
+                    break
+
+            #summary = sess.run(summary_op)
+            #validation_writer.add_summary(summary, nr_epochs)
+            #logger.epoch_logger(nr_epochs)
             save_path = saver.save(sess, chk_name)
         train_writer.close()
         validation_writer.close()

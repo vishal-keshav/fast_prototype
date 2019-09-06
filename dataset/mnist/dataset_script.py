@@ -13,9 +13,9 @@ import cv2
 import sys
 import os
 
-class MNIST:
+class mnist:
     def __init__(self, absolute_path):
-        self.dataset_name = "MNIST"
+        self.dataset_name = "mnist"
         self.absolute_path = absolute_path
 
     def get_data(self):
@@ -33,5 +33,5 @@ class MNIST:
         return img
 
 def get_obj(absolute_path):
-    obj = MNIST(absolute_path)
+    obj = mnist(absolute_path)
     return obj

@@ -6,9 +6,11 @@ Email: vishal.keshav.1993@gmail.com
 
 """
 
+from core import debug as d
 from core import dataset_preprocessing as dp
 from core import hyperparameter_search as hp
-from core import model_trainer as mt
+#from core import model_trainer as mt
+from core import model_trainer_distributed as mt
 from core import evaluator as e
 from core import generate_visualization as gv
 import argparse
@@ -20,7 +22,7 @@ prog_details = "A systematic ML project prototyping"
 def argument_parser():
     parser = argparse.ArgumentParser(description=program_name+":"+ prog_details)
     parser.add_argument('--phase', default='all', type=str, help='Phase')
-    parser.add_argument('--dataset', default='MNIST', type=str,
+    parser.add_argument('--dataset', default='mnist', type=str,
                         help='Dataset')
     parser.add_argument('--download', default=True, type=bool,
                         help='Download dataset?')
@@ -43,6 +45,8 @@ def argument_parser():
 
 def main():
     args = argument_parser()
+    if args.phase == 'debug':
+        d.execute(args)
     if args.phase == 'dataset' or args.phase == 'all':
         dp.execute(args)
     if args.phase == 'param_search':

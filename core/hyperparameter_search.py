@@ -73,11 +73,7 @@ def get_data_provider(dataset, project_path, param_dict):
     data_provider_module_path = "dataset." + dataset + ".data_provider"
     data_provider_module = importlib.import_module(data_provider_module_path)
     dp_obj = data_provider_module.get_obj(project_path)
-    with tf.name_scope('input'):
-        img_batch = tf.placeholder(tf.float32, [None, 28, 28, 1])
-    with tf.name_scope('output'):
-        label_batch = tf.placeholder(tf.int64, [None, 10])
-    return img_batch, label_batch, dp_obj
+    return dp_obj
 
 def get_model(version, inputs, param_dict):
     model_module_path = "architecture.version" + str(version) + ".model"
@@ -114,6 +110,7 @@ def log_file_suffix(params):
     return file_suffix
 
 def fitness(param_space_values):
+    tf.reset_default_graph()
     # Here we re-create the param dictionary
     project_path = os.getcwd()
     param_dict = {}
@@ -126,9 +123,8 @@ def fitness(param_space_values):
             param_dict[key] = value
     ########### param_dict creation complete ################
     # Define the data provider module
-    img_batch, label_batch, dp = get_data_provider(args.dataset,
-                                                       project_path, param_dict)
-    dp.set_batch(param_dict['BATCH_SIZE'])
+    dp = get_data_provider(args.dataset, project_path, param_dict)
+    img_batch, label_batch = dp.get_train_dataset(param_dict['BATCH_SIZE'])
     # Construct a model to be trained
     model = get_model(args.model, img_batch, param_dict)
     # Define optimization procedure
@@ -146,15 +142,12 @@ def fitness(param_space_values):
         train_writer = tf.summary.FileWriter(summary_path + '/' +
                                 log_file_suffix(param_space_values), sess.graph)
         sess.run(tf.global_variables_initializer())
+        dp.initialize_train(sess)
         for nr_epochs in range(param_dict['NUM_EPOCHS']):
             for i in range(5):
-                img_batch_data, label_batch_data = dp.next()
-                feed_dict = {img_batch: img_batch_data,
-                             label_batch: label_batch_data}
                 _, out, loss, accu, summary = sess.run(
                                             [gd_opt_op,output_probability,
-                                             loss_op, accuracy_op, summary_op],
-                                            feed_dict = feed_dict)
+                                             loss_op, accuracy_op, summary_op])
                 train_writer.add_summary(summary, nr_epochs*10 + i)
         train_writer.close()
     tf.reset_default_graph()

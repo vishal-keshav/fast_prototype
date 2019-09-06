@@ -12,7 +12,7 @@ class profiler:
 
     def profile_param(self):
         run_meta = tf.RunMetadata()
-        profile_op =
+        profile_op = \
                 tf.profiler.ProfileOptionBuilder.trainable_variables_parameter()
         params = tf.profiler.profile(self.graph, run_meta=run_meta, cmd='op',
                                         options=profile_op)

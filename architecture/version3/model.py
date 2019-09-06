@@ -1,3 +1,4 @@
+# MobileNet with transfer learning cabaility.
 import tensorflow as tf
 import numpy as np
 
@@ -6,140 +7,152 @@ import shutil
 import wget
 import tarfile
 
-"""
-MobileNet Architecture.
-"""
-
 class MobileNet:
-    def __init__(self, weights = None, trainable = True):
+    """
+    MobileNet Architecture version 1. The model has both train and validation
+    architecture construction options. Weight transfer from original mobilenet
+    is also possible.
+    """
+    def __init__(self, weights = None, train_mode = False, trainable = True,
+                    nr_class = 1001):
+        """
+        Initialization of MobileNetv1
+
+        Args:
+            weights: Dictionary with keys as layer name and value as numpy array
+            train_mode: If the network graph constructed is for training or test
+            trainable: Are the variables created to construct the net may change
+            nr_class: Number of class required to be output.
+
+        Returns:
+            Object of MobileNetv1
+
+        Raises:
+            KeyError: None
+        """
         self.layers = []
         self.network = {}
-        # We need train/test mode since we have batch normalization
-        # Otherwise, we have share the parameters between two constructed nets
-        #self.is_train = tf.placeholder(tf.bool, shape = ())
-        self.is_train = False
-        self.nr_classes = 1001
+        self.is_train = train_mode
+        self.nr_classes = nr_class
         if weights is not None:
             self.data_dict = weights
         else:
             self.data_dict = None
         self.trainable = trainable
 
-    def build_model(self, img, var_reuse = False):
-        if var_reuse:
-            with tf.variable_scope("mobilenet", reuse = tf.AUTO_REUSE):
-                self._build_model(img)
-        else:
+    def build_model(self, img):
+        """
+        Wrapper with variable resue on _build_model that does the heavy lifting.
+        """
+        with tf.variable_scope("", reuse = tf.AUTO_REUSE):
             self._build_model(img)
 
-    """
-    Builds the model
-    """
     def _build_model(self, img):
         with tf.name_scope('preprocess') as scope:
-            print("no preprocessing now")
+            print("do pre-processing in dataset module")
             input = img
 
-        with tf.name_scope('layer_1') as scope:
+        with tf.variable_scope('layer_1'):
             self.network['layer_1_out'] = self.conv(input, kernel_shape = [3,3],
-                      out_channel=32, strides = [1,2,2,1], name = scope+"conv")
+                      out_channel=32, strides = [1,2,2,1], name ="layer_1/conv")
 
-        with tf.name_scope('layer_2') as scope:
+        with tf.variable_scope('layer_2'):
             self.network['layer_2_out_1'] = self.depth_conv(
                             self.network['layer_1_out'], kernel_shape = [3,3],
-                                                     name = scope+"depth_conv")
+                                                    name = "layer_2/depth_conv")
             self.network['layer_2_out_2']= self.conv(
                             self.network['layer_2_out_1'], kernel_shape = [1,1],
-                 out_channel=64, strides = [1,1,1,1], name = scope+"point_conv")
+                 out_channel=64, strides = [1,1,1,1],name ="layer_2/point_conv")
 
-        with tf.name_scope('layer_3') as scope:
+        with tf.variable_scope('layer_3'):
             self.network['layer_3_out_1'] = self.depth_conv(
                             self.network['layer_2_out_2'], kernel_shape = [3,3],
-                                                     name = scope+"depth_conv")
+                                                     name ="layer_3/depth_conv")
             self.network['layer_3_out_2']= self.conv(
                             self.network['layer_3_out_1'], kernel_shape = [1,1],
-                 out_channel=128, strides =[1,2,2,1], name = scope+"point_conv")
+                 out_channel=128, strides =[1,2,2,1],name ="layer_3/point_conv")
 
-        with tf.name_scope('layer_4') as scope:
+        with tf.variable_scope('layer_4'):
             self.network['layer_4_out_1'] = self.depth_conv(
                             self.network['layer_3_out_2'], kernel_shape = [3,3],
-                                                     name = scope+"depth_conv")
+                                                     name ="layer_4/depth_conv")
             self.network['layer_4_out_2']= self.conv(
                             self.network['layer_4_out_1'], kernel_shape = [1,1],
-                 out_channel=128, strides =[1,1,1,1], name = scope+"point_conv")
+                 out_channel=128, strides =[1,1,1,1],name ="layer_4/point_conv")
 
-        with tf.name_scope('layer_5') as scope:
+        with tf.variable_scope('layer_5'):
             self.network['layer_5_out_1'] = self.depth_conv(
                             self.network['layer_4_out_2'], kernel_shape = [3,3],
-                                                     name = scope+"depth_conv")
+                                                     name ="layer_5/depth_conv")
             self.network['layer_5_out_2']= self.conv(
                             self.network['layer_5_out_1'], kernel_shape = [1,1],
-                 out_channel=256, strides =[1,2,2,1], name = scope+"point_conv")
+                 out_channel=256, strides =[1,2,2,1],name ="layer_5/point_conv")
 
-        with tf.name_scope('layer_6') as scope:
+        with tf.variable_scope('layer_6'):
             self.network['layer_6_out_1'] = self.depth_conv(
                             self.network['layer_5_out_2'], kernel_shape = [3,3],
-                                                     name = scope+"depth_conv")
+                                                     name ="layer_6/depth_conv")
             self.network['layer_6_out_2']= self.conv(
                             self.network['layer_6_out_1'], kernel_shape = [1,1],
-                 out_channel=256, strides =[1,1,1,1], name = scope+"point_conv")
+                 out_channel=256, strides =[1,1,1,1],name ="layer_6/point_conv")
 
-        with tf.name_scope('layer_7') as scope:
+        with tf.variable_scope('layer_7'):
             self.network['layer_7_out_1'] = self.depth_conv(
                             self.network['layer_6_out_2'], kernel_shape = [3,3],
-                                                     name = scope+"depth_conv")
+                                                     name ="layer_7/depth_conv")
             self.network['layer_7_out_2']= self.conv(
                         self.network['layer_7_out_1'], kernel_shape = [1,1],
-                 out_channel=512, strides =[1,2,2,1], name = scope+"point_conv")
-        # same block is being repeated
+                 out_channel=512, strides =[1,2,2,1],name ="layer_7/point_conv")
+
         for i in range(8,13):
-            with tf.name_scope('layer_'+str(i)) as scope:
+            with tf.variable_scope('layer_'+str(i)):
                 self.network['layer_' + str(i)+'_out_1'] = self.depth_conv(
                                 self.network['layer_'+str(i-1)+'_out_2'],
-                                kernel_shape = [3,3],name = scope+"depth_conv")
+                                kernel_shape = [3,3],
+                                name = 'layer_'+str(i)+ "/depth_conv")
                 self.network['layer_'+str(i)+'_out_2']= self.conv(
                                 self.network['layer_'+str(i)+'_out_1'],
                                 kernel_shape = [1,1],
                                 out_channel=512, strides =[1,1,1,1],
-                                name = scope+"point_conv")
+                                name = 'layer_'+str(i) +"/point_conv")
 
-        with tf.name_scope('layer_13') as scope:
+        with tf.variable_scope('layer_13'):
             self.network['layer_13_out_1'] = self.depth_conv(
                             self.network['layer_12_out_2'],kernel_shape = [3,3],
-                                                     name = scope+"depth_conv")
+                                                  name = "layer_13/depth_conv")
             self.network['layer_13_out_2']= self.conv(
                             self.network['layer_13_out_1'],kernel_shape = [1,1],
-                 out_channel=1024, strides =[1,2,2,1], name =scope+"point_conv")
+                 out_channel=1024, strides =[1,2,2,1],
+                 name ="layer_13/point_conv")
 
-        with tf.name_scope('layer_14') as scope:
+        with tf.variable_scope('layer_14'):
             self.network['layer_14_out_1'] = self.depth_conv(
                             self.network['layer_13_out_2'],kernel_shape = [3,3],
-                                                     name = scope+"depth_conv")
+                                                name = "layer_14/depth_conv")
             self.network['layer_14_out_2']= self.conv(
                             self.network['layer_14_out_1'],kernel_shape = [1,1],
-                 out_channel=1024, strides =[1,1,1,1], name =scope+"point_conv")
+                 out_channel=1024, strides =[1,1,1,1],
+                 name = "layer_14/point_conv")
 
-        with tf.name_scope('average_pool') as scope:
+        with tf.variable_scope('average_pool'):
             self.network['average_pool'] = tf.nn.avg_pool(
                            self.network['layer_14_out_2'], ksize = [1, 7, 7, 1],
                            strides = [1, 1, 1, 1], padding = 'VALID')
 
         print("no dropout now")
 
-        with tf.name_scope('conv_out') as scope:
+        with tf.variable_scope('conv_out'):
             nr_depth = self.network['average_pool'].get_shape().as_list()[-1]
             p_kernel = self.get_var(shape = [1,1,nr_depth, self.nr_classes],
-                                                       name = scope + "conv_W")
-            self.network[scope + "conv_W"] = p_kernel
+                                                       name = "conv_out/conv_W")
             p_biases = self.get_var(shape=[self.nr_classes],
-                                                       name = scope + "conv_b")
-            self.network[scope + "conv_b"] = p_biases
+                                                       name = "conv_out/conv_b")
             p_conv = tf.nn.conv2d(self.network['average_pool'], p_kernel,
                                           strides = [1,1,1,1], padding = 'SAME')
             p_conv = tf.nn.bias_add(p_conv, p_biases)
             self.network['conv_out'] = p_conv
 
-        with tf.name_scope('flatten') as scope:
+        with tf.variable_scope('flatten'):
             nr_elems = np.prod([nr_elem
              for nr_elem in self.network['conv_out'].get_shape().as_list()[1:]])
             shape = [-1, nr_elems]
@@ -156,14 +169,17 @@ class MobileNet:
     def get_logits(self):
         return self.network['logits']
 
-    # This needs to be changed if the pre-loaded weights come in some different format
+    def get_network(self):
+        return self.network
+
     def get_var(self, name, shape):
         if self.data_dict is not None and name in self.data_dict.keys():
             var = tf.get_variable(initializer=tf.constant(self.data_dict[name]),
                     dtype = tf.float32, trainable = self.trainable, name = name)
         else:
             var = tf.get_variable(name = name, shape = shape, dtype =tf.float32,
-                        initializer=tf.truncated_normal_initializer(0.0, 0.001),
+                        #initializer=tf.truncated_normal_initializer(0.0, 0.001),
+                        initializer = tf.contrib.layers.xavier_initializer(),
                         trainable = self.trainable)
         variable_summaries(var)
         return var
@@ -187,16 +203,17 @@ class MobileNet:
         kernel = self.get_var(shape = [kernel_shape[0], kernel_shape[1],
                                   nr_depth,out_channel], name = name + "_W")
         self.network[name + "_W"] = kernel
-        #biases = self.get_var(shape=[out_channel], name= name + "_b")
         conv = tf.nn.conv2d(input, kernel, strides, padding='SAME')
-
-        #conv = tf.nn.bias_add(conv, biases)
-        beta = self.get_initializer_zeros(shape = [out_channel], name = name + "_bn/beta")
-        gamma = self.get_initializer_ones(shape = [out_channel], name = name + "_bn/gamma")
-        mean = self.get_initializer_zeros(shape = [out_channel], name = name + "_bn/moving_mean")
-        variance = self.get_initializer_ones(shape = [out_channel], name = name + "_bn/moving_variance")
+        beta = self.get_initializer_zeros(shape = [out_channel],
+                                            name = name + "_bn/beta")
+        gamma = self.get_initializer_ones(shape = [out_channel],
+                                            name = name + "_bn/gamma")
+        mean = self.get_initializer_zeros(shape = [out_channel],
+                                            name = name + "_bn/moving_mean")
+        variance = self.get_initializer_ones(shape = [out_channel],
+                                            name = name + "_bn/moving_variance")
         batch = tf.layers.batch_normalization(conv,
-                        #epsilon = 0.0010000000474974513,
+                        epsilon = 0.0010000000474974513,
                         beta_initializer = beta,
                         gamma_initializer = gamma,
                         moving_mean_initializer = mean,
@@ -210,16 +227,18 @@ class MobileNet:
         nr_depth = input.get_shape().as_list()[-1]
         dw_kernel = self.get_var(shape=[3, 3, nr_depth, 1],name=name + '_W')
         self.network[name + "_W"] = dw_kernel
-        #dw_biases = self.get_var(shape=[nr_depth], name = name + '_b')
         conv_dw = tf.nn.depthwise_conv2d(input, dw_kernel, strides = [1,1,1,1],
                                                                padding = 'SAME')
-        #conv_dw = tf.nn.bias_add(conv_dw, dw_biases)
-        beta = self.get_initializer_zeros(shape = [nr_depth], name = name + "_bn/beta")
-        gamma = self.get_initializer_ones(shape = [nr_depth], name = name + "_bn/gamma")
-        mean = self.get_initializer_zeros(shape = [nr_depth], name = name + "_bn/moving_mean")
-        variance = self.get_initializer_ones(shape = [nr_depth], name = name + "_bn/moving_variance")
+        beta = self.get_initializer_zeros(shape = [nr_depth],
+                                            name = name + "_bn/beta")
+        gamma = self.get_initializer_ones(shape = [nr_depth],
+                                            name = name + "_bn/gamma")
+        mean = self.get_initializer_zeros(shape = [nr_depth],
+                                            name = name + "_bn/moving_mean")
+        variance = self.get_initializer_ones(shape = [nr_depth],
+                                            name = name + "_bn/moving_variance")
         batch=tf.layers.batch_normalization(conv_dw,
-                        #epsilon = 0.0010000000474974513,
+                        epsilon = 0.0010000000474974513,
                         beta_initializer = beta,
                         gamma_initializer = gamma,
                         moving_mean_initializer = mean,
@@ -230,9 +249,9 @@ class MobileNet:
         return activation
 
 def variable_summaries(var):
-    with tf.name_scope('summaries'):
+    with tf.variable_scope('summaries'):
         mean = tf.reduce_mean(var)
-    with tf.name_scope('stddev'):
+    with tf.variable_scope('stddev'):
         stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
     tf.summary.scalar('mean', mean)
     tf.summary.scalar('stddev', stddev)
@@ -240,11 +259,8 @@ def variable_summaries(var):
     tf.summary.scalar('min', tf.reduce_min(var))
     tf.summary.histogram('histogram', var)
 
-
-"""
-Model interface for creating and returning network with initializer specified
-"""
-
+#---------------------------------Below are the utilities to get pre-trained
+#---------------------------------weights for mobilenetv1 from official site
 def create_var_map_dict():
     """
     Doing the transfer learning
@@ -355,80 +371,14 @@ def get_mobilenet_weights():
     weight_dict = np.load(mobilenet_weight_path + "mobilenet_weights.npz")
     return weight_dict
 
-def create_model(img, args):
-    mobilenet_weights = get_mobilenet_weights()
-    #mobilenet_weights = None
-    net = MobileNet(mobilenet_weights)
-    net.build_model(img, False)
+def create_model(img, is_train = True, pretrained = False):
+    if pretrained:
+        mobilenet_weights = get_mobilenet_weights()
+    else:
+        mobilenet_weights = None
+    net = MobileNet(mobilenet_weights, is_train)
+    net.build_model(img)
     return {'feature_in': img,
             'feature_logits': net.get_logits(),
             'feature_out': net.get_feature(),
-            'train_placeholder': net.is_train,
-            'W': net.network['layer_1/conv_W'],
-            'b': net.network['conv_out/conv_b'],
-            'inter': net.network['layer_1/conv_conv_no_activation']}
-
-#------------------------Testing------------------------#
-
-def profile_nodes(graph, verbose = True):
-    ops_list = graph.get_operations()
-    tensor_list = np.array([ops.values() for ops in ops_list])
-    if verbose == True:
-        print('PRINTING OPS LIST WITH FEED INFORMATION')
-        for t in tensor_list:
-            #print(t)
-            pass
-    # Iterate over trainable variables, and compute all dimentions
-    total_dims = 0
-    #for variable in tf.trainable_variables():
-    for variable in tf.global_variables():
-        shape = variable.get_shape() # of type tf.Dimension
-        print(variable.name, shape.as_list())
-        variable_parameters = 1
-        for dim in shape:
-            variable_parameters *= dim.value
-        total_dims += variable_parameters
-    #for variable in tf.moving_average_variables():
-    #    shape = variable.get_shape() # of type tf.Dimension
-    #    print(variable.name, shape.as_list())
-    #    variable_parameters = 1
-    #    for dim in shape:
-    #        variable_parameters *= dim.value
-    #    total_dims += variable_parameters
-    if verbose == True:
-        print('TOTAL DIMS OF TRAINABLE VARIABLES', total_dims)
-    else:
-        # Print in the file
-        pass
-
-def main():
-    project_path = os.getcwd()
-    mobilenet_weight_path = project_path + "/architecture/version3/"
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    img = tf.placeholder(tf.float32, shape = (None, 224, 224, 3))
-    args = {'resolution_multiplier': 1,
-            'width_multiplier': 1,
-            'depth_multiplier': 1}
-    net_features = create_model(img, args)
-    print("MobileNet network built")
-    from imagenet_classes import class_names
-    from scipy.misc import imread, imresize
-
-    with tf.Session(config=config) as sess:
-        #profile_nodes(sess.graph)
-        sess.run(tf.initializers.global_variables())
-        file = mobilenet_weight_path + 'file3.jpg'
-        input = imread(file, mode='RGB')
-        input = imresize(input, (224, 224)).reshape(1, 224, 224, 3).astype(float)
-        input/=127.5
-        input-=1.
-        #feed_dict = {img: input, net_features['train_placeholder']: False}
-        feed_dict = {img: input}
-        op_prob = sess.run(net_features['feature_out'], feed_dict = feed_dict)
-        preds = (np.argsort(op_prob[0])[::-1])[0:5]
-        for p in preds:
-            print(class_names[p-1], op_prob[0][p])
-
-if __name__ == "__main__":
-    main()
+            'network': net.get_network()}

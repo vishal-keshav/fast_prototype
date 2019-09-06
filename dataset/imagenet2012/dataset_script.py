@@ -12,9 +12,9 @@ import cv2
 import sys
 import os
 
-class IMAGENET:
+class imagenet2012:
     def __init__(self, absolute_path):
-        self.dataset_name = "IMAGENET"
+        self.dataset_name = "imagenet2012"
         self.absolute_path = absolute_path
 
     def get_data(self):
@@ -32,5 +32,5 @@ class IMAGENET:
         return img
 
 def get_obj(absolute_path):
-    obj = IMAGENET(absolute_path)
+    obj = imagenet2012(absolute_path)
     return obj
