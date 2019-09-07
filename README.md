@@ -10,10 +10,11 @@ This repository contains an easy-to-use and easy-to-follow heirarchy of code bas
 3. Takes full advange of tensorflow fast data pipeline and efficient GPU computation algorithms.
 4. Get the notifications of the training progress on your mobile-phone.
 5. Highly extensible and easy to modify source code.
+6. Extensive guide and comments through out the project to guide about the implementation of a new feature
+7. Interesting visualizations such as distribution plot of an intermediate layer of neural network
 
 # Up coming features
-1. An extensive guide to make this framework highly useful for your project
-2. Some interesting visualizations
+1. Support for training detection models, with more modularity.
 
 ## Dependency
 `numpy` `ntfy` `slackclient` `ntfy[slack]` `tensorflow` or `tensorflow_gpu` `keyboard` `opencv_python` `netron` `wget` `pathlib` `statistics` `argparse` `scikit-optimize` `matplotlib` `scipy` `Pillow` `six`
