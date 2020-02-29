@@ -10,7 +10,7 @@ This repository contains an easy-to-use and easy-to-follow code base :octocat: t
 3. Takes full advantage of TensorFlow's fast data pipeline and efficient GPU computation algorithms.
 4. Get notifications of the training progress on your mobile phone.
 5. Highly extensible and easy to modify source code.
-6. Extensive guide and comments through out the project to guide you through the implementation of a new feature
+6. Extensive guide and comments in the project to guide you through the implementation of a new feature
 7. Interesting visualizations such as distribution plots of intermediate layers of neural networks
 
 # Upcoming features
