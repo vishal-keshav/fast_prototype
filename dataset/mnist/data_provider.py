@@ -36,13 +36,13 @@ class data_provider_mnist:
 
     def train_transform(self, input):
         img = tf.image.convert_image_dtype(image = input["image"], dtype = tf.float32)
-        img = tf.image.resize_images(images = img, size = [28, 28])
+        img = tf.image.resize(images = img, size = [28, 28])
         label = tf.one_hot(input["label"], depth = 10, axis = -1)
         return {"image": img, "label": label}
 
     def validation_transform(self, input):
         img = tf.image.convert_image_dtype(image = input["image"], dtype = tf.float32)
-        img = tf.image.resize_images(images = img, size = [28, 28])
+        img = tf.image.resize(images = img, size = [28, 28])
         label = tf.one_hot(input["label"], depth = 10, axis = -1)
         return {"image": img, "label": label}
 
