@@ -36,14 +36,14 @@ class data_provider_coco:
 
     def train_transform(self, input):
         img = tf.image.convert_image_dtype(image = input["image"], dtype = tf.float32)
-        img = tf.image.resize_images(images = img, size = [416, 416])
+        img = tf.image.resize(images = img, size = [416, 416])
         bbox = input["objects"]["bbox"]
         label = tf.one_hot(input["objects"]["label"], depth = 80, axis = -1)
         return {"image": img, "bbox": bbox, "label": label}
 
     def validation_transform(self, input):
         img = tf.image.convert_image_dtype(image = input["image"], dtype = tf.float32)
-        img = tf.image.resize_images(images = img, size = [416, 416])
+        img = tf.image.resize(images = img, size = [416, 416])
         bbox = input["objects"]["bbox"]
         label = tf.one_hot(input["objects"]["label"], depth = 80, axis = -1)
         return {"image": img, "bbox": bbox, "label": label}
