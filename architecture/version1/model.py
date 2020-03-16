@@ -154,3 +154,8 @@ def create_model(img, is_train = True, pretrained = False):
             'feature_logits': net.get_logits() ,
             'feature_out': net.get_feature(),
             'network': net.get_network()}
+
+if __name__ == "__main__":
+    img = tf.random.uniform(shape = (28,28,3))
+    arch_dict = create_model(img)
+    print(arch_dict)

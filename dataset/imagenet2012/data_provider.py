@@ -48,7 +48,7 @@ class data_provider_imagenet2012:
         """
         img = tf.image.convert_image_dtype(image = input["image"],
                                                     dtype = tf.float32)
-        img = tf.image.resize_images(images = img, size = [224, 224])
+        img = tf.image.resize(images = img, size = [224, 224])
         img = self._img_transform(img)
         label = tf.one_hot(indices = input["label"]+1, depth=1001, axis=-1)
         return {"image": img, "label": label}
@@ -59,7 +59,7 @@ class data_provider_imagenet2012:
         """
         img = tf.image.convert_image_dtype(image = input["image"],
                                                     dtype = tf.float32)
-        img = tf.image.resize_images(images = img, size = [224, 224])
+        img = tf.image.resize(images = img, size = [224, 224])
         img = self._img_transform(img)
         label = tf.one_hot(indices = input["label"]+1, depth=1001, axis=-1)
         return {"image": img, "label": label}
