@@ -156,6 +156,6 @@ def create_model(img, is_train = True, pretrained = False):
             'network': net.get_network()}
 
 if __name__ == "__main__":
-    img = tf.random.uniform(shape = (28,28,3))
+    img = tf.random.uniform(shape = (28,28,3,3))
     arch_dict = create_model(img)
     print(arch_dict)
