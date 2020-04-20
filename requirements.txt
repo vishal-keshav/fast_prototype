@@ -2,8 +2,8 @@ numpy
 ntfy
 slackclient
 ntfy[slack]
-tensorflow-gpu==1.30
-tensorflow-datasets==1.10
+tensorflow-gpu
+tensorflow-datasets
 keyboard
 opencv-python
 netron
